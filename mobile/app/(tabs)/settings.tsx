@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, useColorScheme, Switch, Alert, TextInput, Modal, Pressable,
+  TouchableOpacity, useColorScheme, Switch, Alert, TextInput, Modal, Pressable, Clipboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,6 +33,62 @@ function ToggleRow({
         trackColor={{ false: t.border, true: t.primary }}
         thumbColor="#fff"
       />
+    </View>
+  );
+}
+
+// ── Push Token Card (dev only)
+function PushTokenCard({ token, t }: { token: string | null; t: typeof LIGHT }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (!token) return;
+    Clipboard.setString(token);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  return (
+    <View style={[styles.card, { backgroundColor: t.surface, borderColor: '#6366F1', borderStyle: 'dashed' }]}>
+      <View style={styles.cardHeader}>
+        <View style={[styles.cardIconBox, { backgroundColor: '#EEF2FF' }]}>
+          <Ionicons name="code-slash-outline" size={18} color="#6366F1" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.cardTitle, { color: '#6366F1' }]}>Dev — Push Token</Text>
+          <Text style={[styles.cardSub, { color: t.textSub }]}>Hanya tampil untuk keperluan testing</Text>
+        </View>
+      </View>
+
+      {token ? (
+        <>
+          <View style={[styles.tokenBox, { backgroundColor: t.bg, borderColor: t.border }]}>
+            <Text style={[styles.tokenText, { color: t.text }]} selectable numberOfLines={3}>
+              {token}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.copyBtn, { backgroundColor: copied ? '#22C55E' : '#6366F1' }]}
+            onPress={handleCopy}
+            activeOpacity={0.8}
+          >
+            <Ionicons name={copied ? 'checkmark-outline' : 'copy-outline'} size={16} color="#fff" />
+            <Text style={styles.copyBtnText}>
+              {copied ? 'Token Tersalin!' : 'Salin Token'}
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.tokenHint, { color: t.textSub }]}>
+            Paste token ini di expo.dev/notifications untuk test kirim notifikasi.
+          </Text>
+        </>
+      ) : (
+        <View style={[styles.tokenEmpty, { borderColor: t.border }]}>
+          <Ionicons name="hourglass-outline" size={20} color={t.textSub} />
+          <Text style={[styles.tokenEmptyText, { color: t.textSub }]}>
+            Token belum tersedia. Pastikan app berjalan di perangkat fisik dengan build EAS.
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -77,7 +133,7 @@ function DeleteAccountModal({ onClose, t }: { onClose: () => void; t: typeof LIG
               </View>
               <Text style={[styles.deleteTitle, { color: t.text }]}>Hapus Akun</Text>
               <Text style={[styles.deleteSub, { color: t.textSub }]}>
-                Tindakan ini bersifat permanen dan tidak dapat dibatalkan. Pastikan kamu sudah memahami konsekuensinya.
+                Tindakan ini bersifat permanen dan tidak dapat dibatalkan.
               </Text>
               <View style={[styles.warningCard, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
                 <Text style={[styles.warningTitle, { color: '#991B1B' }]}>Data yang akan dihapus secara permanen:</Text>
@@ -144,8 +200,7 @@ function DeleteAccountModal({ onClose, t }: { onClose: () => void; t: typeof LIG
               </View>
               <Text style={[styles.deleteTitle, { color: t.text }]}>Konfirmasi Terakhir</Text>
               <Text style={[styles.deleteSub, { color: t.textSub }]}>
-                Untuk memastikan kamu serius, ketik{' '}
-                <Text style={{ fontWeight: '800', color: '#EF4444' }}>{CONFIRM_WORD}</Text>{' '}di bawah ini.
+                Ketik <Text style={{ fontWeight: '800', color: '#EF4444' }}>{CONFIRM_WORD}</Text> di bawah ini.
               </Text>
               <View style={[styles.confirmInputWrap, { borderColor: confirmText.toUpperCase() === CONFIRM_WORD ? '#EF4444' : t.border, backgroundColor: t.surface }]}>
                 <TextInput
@@ -181,7 +236,7 @@ function DeleteAccountModal({ onClose, t }: { onClose: () => void; t: typeof LIG
 // ── Main Screen
 export default function SettingsScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
-  const { notifSettings, updateNotif } = useApp();
+  const { notifSettings, updateNotif, pushToken } = useApp();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   return (
@@ -197,6 +252,9 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+
+        {/* DEV: Push Token Card */}
+        <PushTokenCard token={pushToken} t={t} />
 
         {/* Notifikasi Push */}
         <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
@@ -268,13 +326,7 @@ export default function SettingsScreen() {
               <Text style={[styles.cardSub, { color: t.textSub }]}>Tindakan permanen & tidak dapat dibatalkan</Text>
             </View>
           </View>
-
-          {/* ↓ Nonaktifkan Akun — sekarang navigasi ke halaman deactivate-account */}
-          <TouchableOpacity
-            style={styles.menuBtn}
-            activeOpacity={0.7}
-            onPress={() => router.push('/(tabs)/deactivate-account')}
-          >
+          <TouchableOpacity style={styles.menuBtn} activeOpacity={0.7} onPress={() => router.push('/(tabs)/deactivate-account')}>
             <View style={[styles.toggleIcon, { backgroundColor: '#FFFBEB' }]}>
               <Ionicons name="pause-circle-outline" size={18} color="#F59E0B" />
             </View>
@@ -284,9 +336,7 @@ export default function SettingsScreen() {
             </View>
             <Ionicons name="chevron-forward-outline" size={18} color="#F59E0B" />
           </TouchableOpacity>
-
           <View style={[styles.divider, { backgroundColor: '#FECACA' }]} />
-
           <TouchableOpacity style={styles.deleteBtn} activeOpacity={0.8} onPress={() => setShowDeleteModal(true)}>
             <LinearGradient
               colors={['#DC2626', '#EF4444']}
@@ -353,4 +403,12 @@ const styles = StyleSheet.create({
   reasonText:       { flex: 1, fontSize: 13, lineHeight: 19 },
   confirmInputWrap: { width: '100%', borderWidth: 2, borderRadius: 12, paddingHorizontal: 16, height: 52, justifyContent: 'center' },
   confirmInput:     { fontSize: 18, fontWeight: '800', letterSpacing: 1, textAlign: 'center' },
+  // token card
+  tokenBox:         { marginHorizontal: 14, marginBottom: 10, borderWidth: 1, borderRadius: 10, padding: 12 },
+  tokenText:        { fontSize: 12, fontFamily: 'monospace', lineHeight: 18 },
+  copyBtn:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginHorizontal: 14, marginBottom: 10, borderRadius: 10, paddingVertical: 11 },
+  copyBtnText:      { fontSize: 13, fontWeight: '700', color: '#fff' },
+  tokenHint:        { fontSize: 11, textAlign: 'center', marginHorizontal: 14, marginBottom: 14, lineHeight: 16 },
+  tokenEmpty:       { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 14, marginBottom: 14, borderWidth: 1, borderRadius: 10, padding: 12, borderStyle: 'dashed' },
+  tokenEmptyText:   { flex: 1, fontSize: 12, lineHeight: 18 },
 });
