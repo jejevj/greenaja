@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import {
-  ScrollView,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { View, Text, Button } from 'react-native-ui-lib';
+import {
+  View,
+  Text,
+  Button,
+  Colors,
+  TextField,
+} from 'react-native-ui-lib';
 import { router } from 'expo-router';
-import { InputField } from '@/components/ui/InputField';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -17,7 +22,6 @@ export default function LoginScreen() {
 
   const handleLogin = () => {
     setLoading(true);
-    // Dummy login — langsung masuk
     setTimeout(() => {
       setLoading(false);
       router.replace('/(tabs)');
@@ -37,27 +41,31 @@ export default function LoginScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.emoji}>🌿</Text>
-          <Text style={styles.title}>GreenAja</Text>
-          <Text style={styles.subtitle}>Masuk ke akun kamu</Text>
+          <Text heading style={styles.title}>GreenAja</Text>
+          <Text body style={styles.subtitle}>Masuk ke akun kamu</Text>
         </View>
 
         {/* Form */}
         <View style={styles.form}>
-          <InputField
+          <TextField
+            placeholder="Email"
             label="Email"
-            placeholder="contoh@email.com"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            fieldStyle={styles.field}
+            labelStyle={styles.label}
           />
 
-          <InputField
+          <TextField
+            placeholder="Password"
             label="Password"
-            placeholder="Masukkan password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            fieldStyle={styles.field}
+            labelStyle={styles.label}
           />
 
           <TouchableOpacity style={styles.forgotBtn}>
@@ -68,18 +76,16 @@ export default function LoginScreen() {
             label={loading ? 'Masuk...' : 'Masuk'}
             disabled={loading}
             onPress={handleLogin}
-            style={styles.loginBtn}
-            backgroundColor="#1a7a4a"
-            borderRadius={12}
             size={Button.sizes.large}
+            style={styles.btn}
           />
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Belum punya akun? </Text>
+          <Text body style={styles.footerText}>Belum punya akun? </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-            <Text style={styles.registerLink}>Daftar sekarang</Text>
+            <Text style={styles.link}>Daftar sekarang</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -88,22 +94,27 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f4f9f6' },
+  container: { flex: 1, backgroundColor: Colors.bgLight },
   content: { flexGrow: 1, padding: 24 },
   header: { alignItems: 'center', marginTop: 60, marginBottom: 40 },
   emoji: { fontSize: 52, marginBottom: 12 },
-  title: { fontSize: 32, fontWeight: '700', color: '#1a7a4a' },
-  subtitle: { fontSize: 15, color: '#666', marginTop: 6 },
+  title: { color: Colors.primaryGreen },
+  subtitle: { color: Colors.textMuted, marginTop: 6 },
   form: { gap: 16 },
-  forgotBtn: { alignSelf: 'flex-end', marginTop: -4 },
-  forgotText: { fontSize: 13, color: '#1a7a4a' },
-  loginBtn: { marginTop: 8 },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 32,
-    paddingBottom: 24,
+  label: { fontSize: 14, fontWeight: '500', color: Colors.textPrimary, marginBottom: 6 },
+  field: {
+    borderWidth: 1.5,
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    backgroundColor: Colors.white,
+    fontSize: 15,
   },
-  footerText: { fontSize: 14, color: '#666' },
-  registerLink: { fontSize: 14, color: '#1a7a4a', fontWeight: '600' },
+  forgotBtn: { alignSelf: 'flex-end' },
+  forgotText: { fontSize: 13, color: Colors.primaryGreen },
+  btn: { marginTop: 8, backgroundColor: Colors.primaryGreen },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 32, paddingBottom: 24 },
+  footerText: { color: Colors.textMuted },
+  link: { fontSize: 14, color: Colors.primaryGreen, fontWeight: '600' },
 });
