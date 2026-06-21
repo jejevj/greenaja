@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   ScrollView, StyleSheet, View, Text,
-  TouchableOpacity, useColorScheme, TextInput, Alert, Modal,
+  TouchableOpacity, useColorScheme, TextInput, Modal,
   Animated, Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,11 +14,8 @@ const { height: SCREEN_H } = Dimensions.get('window');
 
 // ── Dummy data ────────────────────────────────────────────────────────────────
 const DUMMY_ADDRESS = {
-  label: 'Rumah',
-  name: 'Budi Santoso',
-  phone: '08123456789',
-  address: 'Jl. Melati No. 12, RT 03/RW 05',
-  city: 'Bogor, Jawa Barat 16151',
+  label: 'Rumah', name: 'Budi Santoso', phone: '08123456789',
+  address: 'Jl. Melati No. 12, RT 03/RW 05', city: 'Bogor, Jawa Barat 16151',
 };
 
 type CheckoutItem = {
@@ -97,26 +94,16 @@ function ProductDetailSheet({
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      {/* Backdrop */}
       <Animated.View style={[sheetStyles.backdrop, { opacity: fadeAnim }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
       </Animated.View>
-
-      {/* Sheet */}
-      <Animated.View
-        style={[sheetStyles.sheet, { backgroundColor: t.bg, transform: [{ translateY: slideAnim }] }]}
-      >
-        {/* Handle */}
+      <Animated.View style={[sheetStyles.sheet, { backgroundColor: t.bg, transform: [{ translateY: slideAnim }] }]}>
         <View style={[sheetStyles.handle, { backgroundColor: t.border }]} />
-
-        {/* Info-only badge */}
         <View style={[sheetStyles.readOnlyBadge, { backgroundColor: t.accent, borderColor: t.border }]}>
           <Ionicons name="eye-outline" size={12} color={t.textSub} />
           <Text style={[sheetStyles.readOnlyText, { color: t.textSub }]}>Mode lihat — tidak dapat diubah di sini</Text>
         </View>
-
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-          {/* Product header */}
           <View style={sheetStyles.productHeader}>
             <View style={[sheetStyles.productIcon, { backgroundColor: t.accent }]}>
               <Ionicons name="leaf-outline" size={40} color={t.primary} />
@@ -125,20 +112,13 @@ function ProductDetailSheet({
               <Text style={[sheetStyles.tagText, { color: t.primary }]}>{item.tag}</Text>
             </View>
           </View>
-
           <Text style={[sheetStyles.productName, { color: t.text }]}>{item.name}</Text>
-
           <View style={sheetStyles.farmRow}>
             <Ionicons name="storefront-outline" size={13} color={t.textSub} />
             <Text style={[sheetStyles.farmText, { color: t.textSub }]}>{item.farm}</Text>
           </View>
-
           <Text style={[sheetStyles.description, { color: t.text }]}>{item.description}</Text>
-
-          {/* Divider */}
           <View style={[sheetStyles.divider, { backgroundColor: t.border }]} />
-
-          {/* Ordered variant info */}
           <Text style={[sheetStyles.sectionTitle, { color: t.text }]}>Varian Dipesan</Text>
           <View style={[sheetStyles.orderedVariant, { backgroundColor: t.primaryMuted, borderColor: t.primary }]}>
             <View style={{ flex: 1 }}>
@@ -154,20 +134,11 @@ function ProductDetailSheet({
               <Text style={sheetStyles.subtotalText}>{fmt(item.price * item.qty)}</Text>
             </View>
           </View>
-
-          {/* All variants — read-only */}
           <Text style={[sheetStyles.sectionTitle, { color: t.text, marginTop: 16 }]}>Semua Varian</Text>
           {item.variants.map((v, i) => {
             const isSelected = v.price === item.price;
             return (
-              <View
-                key={i}
-                style={[
-                  sheetStyles.variantRow,
-                  { borderColor: isSelected ? t.primary : t.border,
-                    backgroundColor: isSelected ? t.primaryMuted : t.surface },
-                ]}
-              >
+              <View key={i} style={[sheetStyles.variantRow, { borderColor: isSelected ? t.primary : t.border, backgroundColor: isSelected ? t.primaryMuted : t.surface }]}>
                 <Text style={[sheetStyles.variantRowLabel, { color: isSelected ? t.primary : t.text }]}>{v.label}</Text>
                 <Text style={[sheetStyles.variantRowPrice, { color: isSelected ? t.primary : t.textSub }]}>{fmt(v.price)}/{v.unit}</Text>
                 {isSelected && (
@@ -178,17 +149,11 @@ function ProductDetailSheet({
               </View>
             );
           })}
-
           <Text style={[sheetStyles.changeNote, { color: t.textSub }]}>
             Untuk mengubah varian atau jumlah, silakan kembali ke Keranjang.
           </Text>
         </ScrollView>
-
-        {/* Close button */}
-        <TouchableOpacity
-          style={[sheetStyles.closeBtn, { borderColor: t.border }]}
-          onPress={onClose}
-        >
+        <TouchableOpacity style={[sheetStyles.closeBtn, { borderColor: t.border }]} onPress={onClose}>
           <Text style={[sheetStyles.closeBtnText, { color: t.text }]}>Tutup</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -246,7 +211,7 @@ export default function CheckoutScreen() {
   const [detailItem, setDetailItem]     = useState<CheckoutItem | null>(null);
   const [showDetail, setShowDetail]     = useState(false);
 
-  const openDetail = (item: CheckoutItem) => { setDetailItem(item); setShowDetail(true); };
+  const openDetail  = (item: CheckoutItem) => { setDetailItem(item); setShowDetail(true); };
   const closeDetail = () => setShowDetail(false);
 
   const shippingPrice = SHIPPING_OPTIONS.find(s => s.id === shipping)!.price;
@@ -267,24 +232,20 @@ export default function CheckoutScreen() {
     }
   };
 
+  // Redirect ke halaman order success setelah bayar
   const handlePaymentDone = () => {
     setShowQris(false);
-    Alert.alert(
-      '✓ Pesanan Dikonfirmasi',
-      'Pembayaran QRIS berhasil.\nPesanan sedang diproses dan akan segera dikirim.',
-      [{ text: 'Kembali ke Beranda', onPress: () => router.replace('/(tabs)') }]
-    );
+    router.replace({
+      pathname: '/(tabs)/order-success',
+      params: { total: String(grandTotal), orderId: 'GRN-20260622-8471' },
+    });
   };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top']}>
 
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[styles.backBtn, { backgroundColor: t.surface, borderColor: t.border }]}
-        >
+        <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: t.surface, borderColor: t.border }]}>
           <Ionicons name="arrow-back-outline" size={20} color={t.text} />
         </TouchableOpacity>
         <View>
@@ -293,13 +254,9 @@ export default function CheckoutScreen() {
         </View>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 160, paddingTop: 4 }}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 160, paddingTop: 4 }} keyboardShouldPersistTaps="handled">
 
-        {/* ── ALAMAT ── */}
+        {/* ALAMAT */}
         <SectionCard t={t} icon="location-outline" title="Alamat Pengiriman">
           <View style={styles.addressRow}>
             <View style={[styles.addrBadge, { backgroundColor: t.primaryMuted }]}>
@@ -311,17 +268,11 @@ export default function CheckoutScreen() {
           <Text style={[styles.addrLine, { color: t.textSub }]}>{DUMMY_ADDRESS.city}</Text>
         </SectionCard>
 
-        {/* ── PRODUK (tapable) ── */}
+        {/* PRODUK */}
         <SectionCard t={t} icon="bag-outline" title={`Produk (${DUMMY_ITEMS.length} item)`}>
           {DUMMY_ITEMS.map((item, idx) => (
-            <TouchableOpacity
-              key={item.id}
-              activeOpacity={0.75}
-              onPress={() => openDetail(item)}
-              style={[
-                styles.itemRow,
-                idx < DUMMY_ITEMS.length - 1 && { borderBottomWidth: 1, borderColor: t.border },
-              ]}
+            <TouchableOpacity key={item.id} activeOpacity={0.75} onPress={() => openDetail(item)}
+              style={[styles.itemRow, idx < DUMMY_ITEMS.length - 1 && { borderBottomWidth: 1, borderColor: t.border }]}
             >
               <View style={[styles.itemDot, { backgroundColor: t.accent }]}>
                 <Ionicons name="leaf-outline" size={16} color={t.primary} />
@@ -334,23 +285,16 @@ export default function CheckoutScreen() {
               <Ionicons name="chevron-forward-outline" size={14} color={t.textSub} style={{ marginLeft: 4 }} />
             </TouchableOpacity>
           ))}
-          <Text style={[styles.tapHint, { color: t.textSub }]}>
-            <Ionicons name="information-circle-outline" size={11} color={t.textSub} /> Tap produk untuk melihat detail
-          </Text>
+          <Text style={[styles.tapHint, { color: t.textSub }]}>ⓘ Tap produk untuk melihat detail</Text>
         </SectionCard>
 
-        {/* ── PENGIRIMAN ── */}
+        {/* PENGIRIMAN */}
         <SectionCard t={t} icon="bicycle-outline" title="Metode Pengiriman">
           {SHIPPING_OPTIONS.map(opt => {
             const active = shipping === opt.id;
             return (
-              <TouchableOpacity
-                key={opt.id}
-                style={[
-                  styles.shippingOption,
-                  { borderColor: active ? t.primary : t.border,
-                    backgroundColor: active ? t.primaryMuted : t.surface },
-                ]}
+              <TouchableOpacity key={opt.id}
+                style={[styles.shippingOption, { borderColor: active ? t.primary : t.border, backgroundColor: active ? t.primaryMuted : t.surface }]}
                 onPress={() => setShipping(opt.id)}
               >
                 <View style={{ flex: 1 }}>
@@ -364,7 +308,7 @@ export default function CheckoutScreen() {
           })}
         </SectionCard>
 
-        {/* ── PROMO ── */}
+        {/* PROMO */}
         <SectionCard t={t} icon="pricetag-outline" title="Kode Promo">
           {appliedPromo ? (
             <View style={[styles.promoApplied, { backgroundColor: t.primaryMuted, borderColor: t.primary }]}>
@@ -381,13 +325,9 @@ export default function CheckoutScreen() {
             <View style={styles.promoRow}>
               <TextInput
                 style={[styles.promoInput, { backgroundColor: t.accent, borderColor: promoError ? '#E53935' : t.border, color: t.text }]}
-                placeholder="Masukkan kode promo"
-                placeholderTextColor={t.textSub}
-                value={promoCode}
-                onChangeText={v => { setPromoCode(v); setPromoError(''); }}
-                autoCapitalize="characters"
-                returnKeyType="done"
-                onSubmitEditing={handleApplyPromo}
+                placeholder="Masukkan kode promo" placeholderTextColor={t.textSub}
+                value={promoCode} onChangeText={v => { setPromoCode(v); setPromoError(''); }}
+                autoCapitalize="characters" returnKeyType="done" onSubmitEditing={handleApplyPromo}
               />
               <TouchableOpacity style={[styles.promoBtn, { backgroundColor: t.primary }]} onPress={handleApplyPromo}>
                 <Text style={styles.promoBtnText}>Pakai</Text>
@@ -402,32 +342,23 @@ export default function CheckoutScreen() {
           ) : null}
           <View style={styles.promoHints}>
             {['GREENAJA10', 'GRATIS50', 'WELCOME20'].map(code => (
-              <TouchableOpacity
-                key={code}
-                style={[styles.promoHintChip, { borderColor: t.border, backgroundColor: t.surface }]}
-                onPress={() => { setPromoCode(code); setPromoError(''); }}
-              >
+              <TouchableOpacity key={code} style={[styles.promoHintChip, { borderColor: t.border, backgroundColor: t.surface }]} onPress={() => { setPromoCode(code); setPromoError(''); }}>
                 <Text style={[styles.promoHintText, { color: t.textSub }]}>{code}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </SectionCard>
 
-        {/* ── CATATAN ── */}
+        {/* CATATAN */}
         <SectionCard t={t} icon="create-outline" title="Catatan untuk Penjual">
           <TextInput
             style={[styles.noteInput, { backgroundColor: t.accent, borderColor: t.border, color: t.text }]}
-            placeholder="Contoh: tolong pilihkan yang paling segar..."
-            placeholderTextColor={t.textSub}
-            value={note}
-            onChangeText={setNote}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
+            placeholder="Contoh: tolong pilihkan yang paling segar..." placeholderTextColor={t.textSub}
+            value={note} onChangeText={setNote} multiline numberOfLines={3} textAlignVertical="top"
           />
         </SectionCard>
 
-        {/* ── METODE PEMBAYARAN ── */}
+        {/* PEMBAYARAN */}
         <SectionCard t={t} icon="qr-code-outline" title="Metode Pembayaran">
           <View style={[styles.qrisCard, { backgroundColor: t.primaryMuted, borderColor: t.primary }]}>
             <View style={[styles.qrisIconBox, { backgroundColor: t.primary }]}>
@@ -442,13 +373,11 @@ export default function CheckoutScreen() {
           <Text style={[styles.qrisNote, { color: t.textSub }]}>* Metode pembayaran lain akan segera tersedia</Text>
         </SectionCard>
 
-        {/* ── RINCIAN HARGA ── */}
+        {/* RINCIAN */}
         <SectionCard t={t} icon="receipt-outline" title="Rincian Pembayaran">
           <PriceRow t={t} label="Subtotal produk" value={fmt(subtotal)} />
           <PriceRow t={t} label={`Ongkos kirim (${SHIPPING_OPTIONS.find(s => s.id === shipping)!.label})`} value={fmt(shippingPrice)} />
-          {appliedPromo && (
-            <PriceRow t={t} label={`Promo (${promoCode.toUpperCase()})`} value={`− ${fmt(discount)}`} valueColor="#2A9960" />
-          )}
+          {appliedPromo && <PriceRow t={t} label={`Promo (${promoCode.toUpperCase()})`} value={`− ${fmt(discount)}`} valueColor="#2A9960" />}
           <View style={[styles.totalDivider, { backgroundColor: t.border }]} />
           <View style={styles.totalRow}>
             <Text style={[styles.totalLabel, { color: t.text }]}>Total Pembayaran</Text>
@@ -465,18 +394,14 @@ export default function CheckoutScreen() {
           <Text style={[styles.ctaTotalValue, { color: t.primary }]}>{fmt(grandTotal)}</Text>
         </View>
         <TouchableOpacity style={styles.ctaOuter} onPress={() => setShowQris(true)} activeOpacity={0.9}>
-          <LinearGradient
-            colors={['#1A7A4A', '#2A9960']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={styles.ctaInner}
-          >
+          <LinearGradient colors={['#1A7A4A', '#2A9960']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.ctaInner}>
             <Ionicons name="qr-code-outline" size={18} color="#fff" />
             <Text style={styles.ctaText}>Bayar dengan QRIS</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
 
-      {/* ── QRIS MODAL ── */}
+      {/* QRIS MODAL */}
       <Modal visible={showQris} transparent animationType="slide" onRequestClose={() => setShowQris(false)}>
         <View style={styles.qrisModalBg}>
           <View style={[styles.qrisModal, { backgroundColor: t.bg }]}>
@@ -486,10 +411,7 @@ export default function CheckoutScreen() {
             <View style={[styles.qrBox, { backgroundColor: t.surface, borderColor: t.border }]}>
               <View style={styles.qrGrid}>
                 {Array.from({ length: 49 }).map((_, i) => (
-                  <View
-                    key={i}
-                    style={[styles.qrCell, { backgroundColor: Math.random() > 0.5 ? t.text : 'transparent', opacity: 0.85 }]}
-                  />
+                  <View key={i} style={[styles.qrCell, { backgroundColor: Math.random() > 0.5 ? t.text : 'transparent', opacity: 0.85 }]} />
                 ))}
               </View>
               <Text style={[styles.qrWatermark, { color: t.primary }]}>GreenAja · QRIS</Text>
@@ -498,15 +420,9 @@ export default function CheckoutScreen() {
               <Text style={[styles.qrisAmtLabel, { color: t.textSub }]}>Jumlah yang harus dibayar</Text>
               <Text style={[styles.qrisAmtValue, { color: t.primary }]}>{fmt(grandTotal)}</Text>
             </View>
-            <Text style={[styles.qrisExpiry, { color: t.textSub }]}>
-              QR berlaku selama <Text style={{ fontWeight: '700', color: '#E53935' }}>10:00</Text> menit
-            </Text>
+            <Text style={[styles.qrisExpiry, { color: t.textSub }]}>QR berlaku selama <Text style={{ fontWeight: '700', color: '#E53935' }}>10:00</Text> menit</Text>
             <TouchableOpacity style={styles.paidBtn} onPress={handlePaymentDone}>
-              <LinearGradient
-                colors={['#1A7A4A', '#2A9960']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={styles.paidBtnInner}
-              >
+              <LinearGradient colors={['#1A7A4A', '#2A9960']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.paidBtnInner}>
                 <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
                 <Text style={styles.paidBtnText}>Saya Sudah Bayar</Text>
               </LinearGradient>
@@ -518,13 +434,8 @@ export default function CheckoutScreen() {
         </View>
       </Modal>
 
-      {/* ── PRODUCT DETAIL SHEET ── */}
-      <ProductDetailSheet
-        item={detailItem}
-        visible={showDetail}
-        onClose={closeDetail}
-        t={t}
-      />
+      {/* PRODUCT DETAIL SHEET */}
+      <ProductDetailSheet item={detailItem} visible={showDetail} onClose={closeDetail} t={t} />
 
     </SafeAreaView>
   );
