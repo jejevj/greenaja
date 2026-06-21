@@ -14,52 +14,22 @@ import ProductBottomSheet, { ProductSheetItem } from '../../components/ProductBo
 
 const { width } = Dimensions.get('window');
 
-// ─── Ad Slideshow Data ────────────────────────────────────────────────────────
+// ── Ad Slideshow ────────────────────────────────────────────────────────────────
 const ADS = [
-  {
-    id: '1',
-    title: 'Sayur Segar Tiap Pagi',
-    sub: 'Langsung dari kebun ke meja makanmu',
-    icon: 'leaf-outline' as const,
-    colors: ['#1A7A4A', '#2A9960'] as [string, string],
-  },
-  {
-    id: '2',
-    title: 'Gratis Ongkir Hari Ini!',
-    sub: 'Untuk pembelian pertamamu, tanpa minimum',
-    icon: 'bicycle-outline' as const,
-    colors: ['#0D6E8A', '#1A9DBF'] as [string, string],
-  },
-  {
-    id: '3',
-    title: 'Produk 100% Organik',
-    sub: 'Bersertifikat, bebas pestisida kimia',
-    icon: 'shield-checkmark-outline' as const,
-    colors: ['#7A4A1A', '#BF6A1A'] as [string, string],
-  },
-  {
-    id: '4',
-    title: 'Paket Keluarga Hemat',
-    sub: 'Hemat hingga 30% untuk pembelian mingguan',
-    icon: 'cart-outline' as const,
-    colors: ['#4A1A7A', '#7A2ABF'] as [string, string],
-  },
-  {
-    id: '5',
-    title: 'Dukung Petani Lokal',
-    sub: 'Setiap pembelian mendukung 200+ petani',
-    icon: 'people-outline' as const,
-    colors: ['#1A4A7A', '#2A6ABF'] as [string, string],
-  },
+  { id: '1', title: 'Sayur Segar Tiap Pagi',    sub: 'Langsung dari kebun ke meja makanmu',        icon: 'leaf-outline'              as const, colors: ['#1A7A4A', '#2A9960'] as [string,string] },
+  { id: '2', title: 'Gratis Ongkir Hari Ini!',  sub: 'Untuk pembelian pertamamu, tanpa minimum',   icon: 'bicycle-outline'           as const, colors: ['#0D6E8A', '#1A9DBF'] as [string,string] },
+  { id: '3', title: 'Produk 100% Organik',       sub: 'Bersertifikat, bebas pestisida kimia',        icon: 'shield-checkmark-outline'  as const, colors: ['#7A4A1A', '#BF6A1A'] as [string,string] },
+  { id: '4', title: 'Paket Keluarga Hemat',      sub: 'Hemat hingga 30% untuk pembelian mingguan',  icon: 'cart-outline'              as const, colors: ['#4A1A7A', '#7A2ABF'] as [string,string] },
+  { id: '5', title: 'Dukung Petani Lokal',       sub: 'Setiap pembelian mendukung 200+ petani',      icon: 'people-outline'            as const, colors: ['#1A4A7A', '#2A6ABF'] as [string,string] },
 ];
 
-const AD_WIDTH = width - 40;
-const AD_HEIGHT = 140;
+const AD_WIDTH    = width - 40;
+const AD_HEIGHT   = 140;
 const AD_INTERVAL = 3500;
 
 function AdSlideshow({ t }: { t: typeof LIGHT }) {
   const [activeIdx, setActiveIdx] = useState(0);
-  const flatRef = useRef<FlatList>(null);
+  const flatRef  = useRef<FlatList>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const goTo = (idx: number) => {
@@ -67,7 +37,6 @@ function AdSlideshow({ t }: { t: typeof LIGHT }) {
     setActiveIdx(idx);
   };
 
-  // auto-advance
   useEffect(() => {
     timerRef.current = setInterval(() => {
       setActiveIdx(prev => {
@@ -82,7 +51,6 @@ function AdSlideshow({ t }: { t: typeof LIGHT }) {
   const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / AD_WIDTH);
     setActiveIdx(idx);
-    // reset timer setelah user swipe manual
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setActiveIdx(prev => {
@@ -103,25 +71,19 @@ function AdSlideshow({ t }: { t: typeof LIGHT }) {
         showsHorizontalScrollIndicator={false}
         keyExtractor={item => item.id}
         onMomentumScrollEnd={handleMomentumEnd}
-        getItemLayout={(_, index) => ({ length: AD_WIDTH, offset: AD_WIDTH * index, index })}
+        getItemLayout={(_, i) => ({ length: AD_WIDTH, offset: AD_WIDTH * i, index: i })}
         renderItem={({ item }) => (
           <TouchableOpacity activeOpacity={0.9} style={{ width: AD_WIDTH }}>
-            <LinearGradient
-              colors={item.colors}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={adStyles.card}
-            >
-              {/* Deco circle */}
+            <LinearGradient colors={item.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={adStyles.card}>
               <View style={adStyles.decoCircle} />
               <View style={adStyles.decoCircle2} />
-
               <View style={adStyles.content}>
                 <View style={adStyles.iconBox}>
                   <Ionicons name={item.icon} size={28} color="rgba(255,255,255,0.95)" />
                 </View>
                 <View style={adStyles.textBox}>
-                  <Text style={adStyles.title}>{item.title}</Text>
-                  <Text style={adStyles.sub}>{item.sub}</Text>
+                  <Text style={adStyles.adTitle}>{item.title}</Text>
+                  <Text style={adStyles.adSub}>{item.sub}</Text>
                 </View>
                 <View style={adStyles.arrow}>
                   <Ionicons name="arrow-forward-outline" size={16} color="rgba(255,255,255,0.7)" />
@@ -131,17 +93,10 @@ function AdSlideshow({ t }: { t: typeof LIGHT }) {
           </TouchableOpacity>
         )}
       />
-
-      {/* Dot indicators */}
       <View style={adStyles.dots}>
         {ADS.map((_, i) => (
           <TouchableOpacity key={i} onPress={() => goTo(i)}>
-            <View
-              style={[
-                adStyles.dot,
-                { backgroundColor: i === activeIdx ? t.primary : t.border, width: i === activeIdx ? 20 : 6 },
-              ]}
-            />
+            <View style={[adStyles.dot, { backgroundColor: i === activeIdx ? t.primary : t.border, width: i === activeIdx ? 20 : 6 }]} />
           </TouchableOpacity>
         ))}
       </View>
@@ -157,93 +112,53 @@ const adStyles = StyleSheet.create({
   content:     { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBox:     { width: 52, height: 52, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   textBox:     { flex: 1 },
-  title:       { fontSize: 16, fontWeight: '800', color: '#fff', marginBottom: 4, letterSpacing: -0.2 },
-  sub:         { fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 17 },
+  adTitle:     { fontSize: 16, fontWeight: '800', color: '#fff', marginBottom: 4, letterSpacing: -0.2 },
+  adSub:       { fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 17 },
   arrow:       { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   dots:        { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 10 },
   dot:         { height: 6, borderRadius: 3 },
 });
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
-
+// ── Data ───────────────────────────────────────────────────────────────────────────
 const CATEGORIES = [
-  { id: '1', label: 'Semua',   icon: 'apps-outline'              },
-  { id: '2', label: 'Sayuran', icon: 'leaf-outline'              },
-  { id: '3', label: 'Buah',    icon: 'nutrition-outline'         },
-  { id: '4', label: 'Rempah',  icon: 'flask-outline'             },
-  { id: '5', label: 'Organik', icon: 'shield-checkmark-outline'  },
-  { id: '6', label: 'Lokal',   icon: 'home-outline'              },
+  { id: '1', label: 'Semua',   icon: 'apps-outline'             },
+  { id: '2', label: 'Sayuran', icon: 'leaf-outline'             },
+  { id: '3', label: 'Buah',    icon: 'nutrition-outline'        },
+  { id: '4', label: 'Rempah',  icon: 'flask-outline'            },
+  { id: '5', label: 'Organik', icon: 'shield-checkmark-outline' },
+  { id: '6', label: 'Lokal',   icon: 'home-outline'             },
 ] as const;
 
 const PRODUCTS: ProductSheetItem[] = [
-  {
-    id: '1', name: 'Bayam Segar', farm: 'Kebun Pak Budi', tag: 'Bestseller',
-    description: 'Bayam lokal segar dipanen pagi hari langsung dari kebun organik Bogor.',
-    variants: [
-      { id: 'v1', label: '1 Ikat',   price: 4500,  unit: 'ikat', stock: 30 },
-      { id: 'v2', label: '3 Ikat',   price: 12000, unit: 'ikat', stock: 15 },
-      { id: 'v3', label: '5 Ikat',   price: 18000, unit: 'ikat', stock: 8  },
-    ],
-  },
-  {
-    id: '2', name: 'Tomat Organik', farm: 'Farm Cisarua', tag: 'Organik',
-    description: 'Tomat cherry organik bersertifikat, tanpa pestisida, rasa manis alami.',
-    variants: [
-      { id: 'v1', label: '250g',  price: 7500,  unit: 'gram', stock: 20 },
-      { id: 'v2', label: '500g',  price: 12000, unit: 'gram', stock: 12 },
-      { id: 'v3', label: '1kg',   price: 22000, unit: 'kg',   stock: 0  },
-    ],
-  },
-  {
-    id: '3', name: 'Cabai Rawit', farm: 'Kebun Bu Sari', tag: 'Populer',
-    description: 'Cabai rawit merah segar, tingkat kepedasan tinggi, cocok untuk masakan rumah.',
-    variants: [
-      { id: 'v1', label: '100g', price: 6000,  unit: 'gram', stock: 25 },
-      { id: 'v2', label: '250g', price: 14000, unit: 'gram', stock: 10 },
-      { id: 'v3', label: '500g', price: 26000, unit: 'gram', stock: 5  },
-    ],
-  },
-  {
-    id: '4', name: 'Kangkung', farm: 'Kebun Pak Budi', tag: 'Segar',
-    description: 'Kangkung air segar, batang renyah, cocok untuk tumis dan lalapan.',
-    variants: [
-      { id: 'v1', label: '1 Ikat', price: 3500,  unit: 'ikat', stock: 40 },
-      { id: 'v2', label: '3 Ikat', price: 9500,  unit: 'ikat', stock: 20 },
-    ],
-  },
-  {
-    id: '5', name: 'Wortel Baby', farm: 'Farm Lembang', tag: 'Baru',
-    description: 'Wortel baby Lembang, manis dan renyah, cocok untuk camilan sehat anak.',
-    variants: [
-      { id: 'v1', label: '250g', price: 9000,  unit: 'gram', stock: 15 },
-      { id: 'v2', label: '500g', price: 16500, unit: 'gram', stock: 8  },
-    ],
-  },
-  {
-    id: '6', name: 'Brokoli Hijau', farm: 'Farm Cisarua', tag: 'Organik',
-    description: 'Brokoli segar organik ukuran besar, kaya vitamin C dan serat.',
-    variants: [
-      { id: 'v1', label: 'Kecil (~300g)',  price: 8000,  unit: 'buah', stock: 12 },
-      { id: 'v2', label: 'Besar (~600g)',  price: 15000, unit: 'buah', stock: 6  },
-    ],
-  },
+  { id: '1', name: 'Bayam Segar',   farm: 'Kebun Pak Budi', tag: 'Bestseller', description: 'Bayam lokal segar dipanen pagi hari langsung dari kebun organik Bogor.',     variants: [{ id:'v1', label:'1 Ikat',        price:4500,  unit:'ikat',  stock:30 }, { id:'v2', label:'3 Ikat',       price:12000, unit:'ikat',  stock:15 }, { id:'v3', label:'5 Ikat',       price:18000, unit:'ikat', stock:8  }] },
+  { id: '2', name: 'Tomat Organik', farm: 'Farm Cisarua',   tag: 'Organik',   description: 'Tomat cherry organik bersertifikat, tanpa pestisida, rasa manis alami.',      variants: [{ id:'v1', label:'250g',          price:7500,  unit:'gram',  stock:20 }, { id:'v2', label:'500g',         price:12000, unit:'gram',  stock:12 }, { id:'v3', label:'1kg',          price:22000, unit:'kg',   stock:0  }] },
+  { id: '3', name: 'Cabai Rawit',   farm: 'Kebun Bu Sari',  tag: 'Populer',   description: 'Cabai rawit merah segar, tingkat kepedasan tinggi, cocok untuk masakan rumah.', variants: [{ id:'v1', label:'100g',          price:6000,  unit:'gram',  stock:25 }, { id:'v2', label:'250g',         price:14000, unit:'gram',  stock:10 }, { id:'v3', label:'500g',         price:26000, unit:'gram', stock:5  }] },
+  { id: '4', name: 'Kangkung',      farm: 'Kebun Pak Budi', tag: 'Segar',     description: 'Kangkung air segar, batang renyah, cocok untuk tumis dan lalapan.',          variants: [{ id:'v1', label:'1 Ikat',        price:3500,  unit:'ikat',  stock:40 }, { id:'v2', label:'3 Ikat',       price:9500,  unit:'ikat',  stock:20 }] },
+  { id: '5', name: 'Wortel Baby',   farm: 'Farm Lembang',   tag: 'Baru',      description: 'Wortel baby Lembang, manis dan renyah, cocok untuk camilan sehat anak.',     variants: [{ id:'v1', label:'250g',          price:9000,  unit:'gram',  stock:15 }, { id:'v2', label:'500g',         price:16500, unit:'gram',  stock:8  }] },
+  { id: '6', name: 'Brokoli Hijau', farm: 'Farm Cisarua',   tag: 'Organik',   description: 'Brokoli segar organik ukuran besar, kaya vitamin C dan serat.',              variants: [{ id:'v1', label:'Kecil (~300g)', price:8000,  unit:'buah',  stock:12 }, { id:'v2', label:'Besar (~600g)', price:15000, unit:'buah', stock:6  }] },
 ];
 
 const PROMOS = [
-  { id: '1', title: 'Gratis Ongkir',         sub: 'Min. belanja Rp 50.000' },
-  { id: '2', title: 'Diskon 20% Pagi Hari',  sub: 'Pesan sebelum jam 07.00' },
-  { id: '3', title: 'Paket Mingguan',         sub: 'Hemat hingga 30%' },
+  { id: '1', title: 'Gratis Ongkir',        sub: 'Min. belanja Rp 50.000'  },
+  { id: '2', title: 'Diskon 20% Pagi Hari', sub: 'Pesan sebelum jam 07.00' },
+  { id: '3', title: 'Paket Mingguan',        sub: 'Hemat hingga 30%'        },
 ];
 
 type CartEntry = { productId: string; variantId: string; qty: number };
 
+// ── Main Screen ─────────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const [activeCategory, setActiveCategory] = useState('1');
-  const [search, setSearch] = useState('');
-  const [focusSearch, setFocusSearch] = useState(false);
-  const [cart, setCart] = useState<CartEntry[]>([]);
-  const [sheetProduct, setSheetProduct] = useState<ProductSheetItem | null>(null);
+  const [search,         setSearch]         = useState('');
+  const [focusSearch,    setFocusSearch]    = useState(false);
+  const [cart,           setCart]           = useState<CartEntry[]>([]);
+  const [sheetProduct,   setSheetProduct]   = useState<ProductSheetItem | null>(null);
+
+  // ─ sticky header shadow ─
+  const scrollY      = useRef(new Animated.Value(0)).current;
+  const headerShadow = scrollY.interpolate({ inputRange: [0, 12], outputRange: [0, 6], extrapolate: 'clamp' });
+  const headerBorder = scrollY.interpolate({ inputRange: [0, 8],  outputRange: [0, 1], extrapolate: 'clamp' });
 
   const cartCount = cart.reduce((s, e) => s + e.qty, 0);
 
@@ -251,9 +166,7 @@ export default function HomeScreen() {
     setCart(prev => {
       const idx = prev.findIndex(e => e.productId === productId && e.variantId === variantId);
       if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = { ...next[idx], qty: next[idx].qty + qty };
-        return next;
+        const next = [...prev]; next[idx] = { ...next[idx], qty: next[idx].qty + qty }; return next;
       }
       return [...prev, { productId, variantId, qty }];
     });
@@ -263,13 +176,26 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
-        {/* TOP BAR */}
+      {/* ───────── STICKY HEADER (di luar ScrollView) ───────── */}
+      <Animated.View
+        style={[
+          styles.stickyHeader,
+          {
+            backgroundColor: t.bg,
+            borderBottomColor: t.border,
+            borderBottomWidth: headerBorder,
+            shadowOpacity: headerShadow.interpolate({ inputRange: [0,6], outputRange: [0, 0.09] }),
+            shadowRadius:  headerShadow,
+            elevation:     headerShadow,
+          },
+        ]}
+      >
+        {/* App Bar */}
         <View style={styles.topBar}>
           <View>
-            <Text style={[styles.greeting, { color: t.textSub }]}>Selamat datang</Text>
-            <Text style={[styles.topTitle, { color: t.text }]}>GreenAja Market</Text>
+            <Text style={[styles.greeting, { color: t.textSub }]}>Selamat datang 🌱</Text>
+            <Text style={[styles.topTitle,  { color: t.text    }]}>GreenAja Market</Text>
           </View>
           <View style={styles.topActions}>
             <TouchableOpacity
@@ -292,8 +218,13 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* SEARCH */}
-        <View style={[styles.searchBar, { backgroundColor: t.surface, borderColor: focusSearch ? t.primary : t.border }]}>
+        {/* Search Bar */}
+        <View
+          style={[
+            styles.searchBar,
+            { backgroundColor: t.surface, borderColor: focusSearch ? t.primary : t.border },
+          ]}
+        >
           <Ionicons name="search-outline" size={18} color={t.textSub} />
           <TextInput
             style={[styles.searchInput, { color: t.text }]}
@@ -310,19 +241,28 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
         </View>
+      </Animated.View>
+      {/* ─────────────────────────────────────────────────────── */}
 
+      <Animated.ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false },
+        )}
+        scrollEventThrottle={16}
+      >
         {/* AD SLIDESHOW */}
-        <AdSlideshow t={t} />
+        <View style={{ marginTop: 16 }}>
+          <AdSlideshow t={t} />
+        </View>
 
         {/* PROMO BANNERS */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.promoList}>
           {PROMOS.map(p => (
             <TouchableOpacity key={p.id} activeOpacity={0.82}>
-              <LinearGradient
-                colors={['#1A7A4A', '#2A9960']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={styles.promoBanner}
-              >
+              <LinearGradient colors={['#1A7A4A', '#2A9960']} start={{ x:0,y:0 }} end={{ x:1,y:1 }} style={styles.promoBanner}>
                 <Ionicons name="pricetag-outline" size={16} color="rgba(255,255,255,0.65)" style={{ marginBottom: 8 }} />
                 <Text style={styles.promoTitle}>{p.title}</Text>
                 <Text style={styles.promoSub}>{p.sub}</Text>
@@ -416,7 +356,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* FLOATING CART */}
       {cartCount > 0 && (
@@ -455,15 +395,25 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   safe:           { flex: 1 },
-  topBar:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
+
+  // ─ sticky header ─
+  stickyHeader:   {
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    paddingBottom: 12,
+  },
+  topBar:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12 },
   greeting:       { fontSize: 12, marginBottom: 2 },
   topTitle:       { fontSize: 20, fontWeight: '800', letterSpacing: -0.3 },
   topActions:     { flexDirection: 'row', gap: 8 },
   iconBtn:        { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   badge:          { position: 'absolute', top: -4, right: -4, width: 17, height: 17, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   badgeText:      { fontSize: 9, color: '#fff', fontWeight: '800' },
-  searchBar:      { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, height: 48, gap: 10, marginBottom: 20 },
+  searchBar:      { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, height: 48, gap: 10 },
   searchInput:    { flex: 1, fontSize: 14 },
+
+  // ─ scroll content ─
   promoList:      { paddingHorizontal: 20, gap: 12, marginBottom: 20 },
   promoBanner:    { width: width * 0.68, borderRadius: 16, padding: 18 },
   promoTitle:     { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 4 },
@@ -492,6 +442,8 @@ const styles = StyleSheet.create({
   recImg:         { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   recName:        { fontSize: 12, fontWeight: '600', textAlign: 'center' },
   recPrice:       { fontSize: 13, fontWeight: '700' },
+
+  // ─ floating cart ─
   floatCartOuter: { position: 'absolute', bottom: 20, left: 20, right: 20, borderRadius: 16, overflow: 'hidden', elevation: 6, shadowColor: '#1A7A4A', shadowOpacity: 0.25, shadowRadius: 12 },
   floatCartInner: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 20 },
   floatLeft:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
