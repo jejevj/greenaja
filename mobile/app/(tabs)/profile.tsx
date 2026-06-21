@@ -11,7 +11,11 @@ import { useApp } from '../../context/AppContext';
 
 export default function ProfileScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
-  const { activeOrderCount, needReviewCount, hasAddress, addresses } = useApp();
+  const {
+    activeOrderCount, needReviewCount,
+    hasAddress, addresses,
+    favFarmers, activeVoucherCount,
+  } = useApp();
 
   type MenuBadge = { count?: number; alert?: boolean } | null;
 
@@ -36,13 +40,13 @@ export default function ProfileScreen() {
     },
     {
       label: 'Petani Favorit', icon: 'heart-outline',
-      sub: '4 petani tersimpan',
+      sub: `${favFarmers} petani tersimpan`,
       badge: null,
     },
     {
-      label: 'Voucher', icon: 'pricetag-outline',
-      sub: '2 voucher aktif',
-      badge: { count: 2 },
+      label: 'Voucher', icon: 'pricetag-outline', route: '/(tabs)/vouchers',
+      sub: activeVoucherCount > 0 ? `${activeVoucherCount} voucher aktif` : 'Tidak ada voucher aktif',
+      badge: activeVoucherCount > 0 ? { count: activeVoucherCount } : null,
     },
     {
       label: 'Pengaturan', icon: 'settings-outline',
@@ -58,6 +62,13 @@ export default function ProfileScreen() {
 
   const totalBadge = MENU.reduce((sum, m) => sum + (m.badge?.count ?? 0), 0)
     + (MENU.some(m => m.badge?.alert) ? 1 : 0);
+
+  // Stats row: Pesanan | Alamat | Favorit
+  const STATS = [
+    { val: String(activeOrderCount + 3), lbl: 'Pesanan',  icon: 'cube-outline',     route: '/(tabs)/orders' },
+    { val: String(addresses.length),     lbl: 'Alamat',   icon: 'location-outline', route: '/(tabs)/address' },
+    { val: String(favFarmers),            lbl: 'Favorit',  icon: 'heart-outline',    route: null },
+  ];
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top']}>
@@ -88,8 +99,8 @@ export default function ProfileScreen() {
             <Text style={[styles.avatarText, { color: t.primary }]}>GA</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.userName, { color: t.text }]}>GreenAja User</Text>
-            <Text style={[styles.userEmail, { color: t.textSub }]}>user@greenaja.id</Text>
+            <Text style={[styles.userName,   { color: t.text    }]}>GreenAja User</Text>
+            <Text style={[styles.userEmail,  { color: t.textSub }]}>user@greenaja.id</Text>
             <View style={[styles.memberBadge, { backgroundColor: t.primaryMuted }]}>
               <Ionicons name="shield-checkmark-outline" size={12} color={t.primary} />
               <Text style={[styles.memberText, { color: t.primary }]}>Member Aktif</Text>
@@ -100,23 +111,19 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Stats */}
+        {/* Stats: Pesanan | Alamat | Favorit */}
         <View style={[styles.statsCard, { backgroundColor: t.surface, borderColor: t.border }]}>
-          {[
-            ['12', 'Pesanan', 'cube-outline'],
-            ['4',  'Favorit', 'heart-outline'],
-            ['2',  'Voucher', 'pricetag-outline'],
-          ].map(([val, lbl, icon], i) => (
+          {STATS.map((s, i) => (
             <React.Fragment key={i}>
               {i > 0 && <View style={[styles.statDivider, { backgroundColor: t.border }]} />}
               <TouchableOpacity
                 style={styles.statItem}
-                onPress={() => i === 0 ? router.push('/(tabs)/orders') : undefined}
-                activeOpacity={i === 0 ? 0.7 : 1}
+                onPress={() => s.route ? router.push(s.route as any) : undefined}
+                activeOpacity={s.route ? 0.7 : 1}
               >
-                <Ionicons name={icon as any} size={18} color={t.primary} style={{ marginBottom: 6 }} />
-                <Text style={[styles.statVal, { color: t.text }]}>{val}</Text>
-                <Text style={[styles.statLbl, { color: t.textSub }]}>{lbl}</Text>
+                <Ionicons name={s.icon as any} size={18} color={t.primary} style={{ marginBottom: 6 }} />
+                <Text style={[styles.statVal, { color: t.text }]}>{s.val}</Text>
+                <Text style={[styles.statLbl, { color: t.textSub }]}>{s.lbl}</Text>
               </TouchableOpacity>
             </React.Fragment>
           ))}
@@ -160,8 +167,7 @@ export default function ProfileScreen() {
                   </View>
                 )}
                 <Ionicons
-                  name="chevron-forward-outline"
-                  size={18}
+                  name="chevron-forward-outline" size={18}
                   color={hasAlert ? '#EF4444' : item.route ? t.primary : t.textSub}
                 />
               </TouchableOpacity>

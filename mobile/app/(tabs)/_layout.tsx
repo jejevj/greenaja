@@ -12,6 +12,7 @@ export default function MainLayout() {
         <Stack.Screen name="explore" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="address" />
+        <Stack.Screen name="vouchers" />
         <Stack.Screen name="cart" />
         <Stack.Screen name="checkout" />
         <Stack.Screen name="order-success" options={{ animation: 'fade', gestureEnabled: false }} />
