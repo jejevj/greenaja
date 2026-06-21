@@ -1,49 +1,35 @@
 import React, { useState } from 'react';
 import {
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
+  StyleSheet, KeyboardAvoidingView, Platform,
+  ScrollView, TouchableOpacity, View, Text,
+  TextInput, Pressable, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 export default function RegisterScreen() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [name, setName]                   = useState('');
+  const [email, setEmail]                 = useState('');
+  const [password, setPassword]           = useState('');
+  const [confirmPassword, setConfirm]     = useState('');
+  const [showPw, setShowPw]               = useState(false);
+  const [loading, setLoading]             = useState(false);
 
   const handleRegister = () => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      router.replace('/(auth)/login');
-    }, 1000);
+    setTimeout(() => { setLoading(false); router.replace('/(auth)/login'); }, 1000);
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Top */}
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+
+        {/* Gradient header */}
         <LinearGradient colors={['#1a7a4a', '#2d9966']} style={styles.topBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={styles.backText}>← Kembali</Text>
+            <Ionicons name="arrow-back-outline" size={18} color="rgba(255,255,255,0.85)" />
+            <Text style={styles.backText}>Kembali</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Buat Akun Baru</Text>
           <Text style={styles.headerSub}>Bergabung bersama komunitas GreenAja</Text>
@@ -87,7 +73,11 @@ export default function RegisterScreen() {
                 secureTextEntry={!showPw}
               />
               <TouchableOpacity onPress={() => setShowPw(!showPw)} style={styles.eyeBtn}>
-                <Text style={styles.eyeIcon}>{showPw ? '🙈' : '👁️'}</Text>
+                <Ionicons
+                  name={showPw ? 'eye-outline' : 'eye-off-outline'}
+                  size={18}
+                  color="#aaa"
+                />
               </TouchableOpacity>
             </View>
           </View>
@@ -99,7 +89,7 @@ export default function RegisterScreen() {
               placeholder="Ulangi password"
               placeholderTextColor="#bbb"
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={setConfirm}
               secureTextEntry
             />
           </View>
@@ -111,8 +101,7 @@ export default function RegisterScreen() {
           >
             <LinearGradient
               colors={['#1a7a4a', '#2d9966']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={styles.btnInner}
             >
               {loading
@@ -135,13 +124,13 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f4f9f6' },
-  content: { flexGrow: 1 },
-  topBar: { paddingTop: 56, paddingBottom: 48, paddingHorizontal: 28 },
-  backBtn: { marginBottom: 16 },
-  backText: { fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
+  container:   { flex: 1, backgroundColor: '#f4f9f6' },
+  content:     { flexGrow: 1 },
+  topBar:      { paddingTop: 56, paddingBottom: 48, paddingHorizontal: 28 },
+  backBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
+  backText:    { fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
   headerTitle: { fontSize: 26, fontWeight: '700', color: '#fff', marginBottom: 6 },
-  headerSub: { fontSize: 14, color: 'rgba(255,255,255,0.7)' },
+  headerSub:   { fontSize: 14, color: 'rgba(255,255,255,0.7)' },
   card: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 28,
@@ -151,8 +140,8 @@ const styles = StyleSheet.create({
     padding: 28,
     paddingTop: 32,
   },
-  fieldGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 8 },
+  fieldGroup:  { marginBottom: 16 },
+  label:       { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 8 },
   input: {
     backgroundColor: '#f7f7f7',
     borderRadius: 12,
@@ -172,12 +161,11 @@ const styles = StyleSheet.create({
     borderColor: '#ebebeb',
     paddingHorizontal: 16,
   },
-  eyeBtn: { paddingLeft: 8, paddingVertical: 14 },
-  eyeIcon: { fontSize: 16 },
-  btnOuter: { borderRadius: 14, overflow: 'hidden', marginTop: 8, marginBottom: 24 },
-  btnInner: { paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
-  btnText: { fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.3 },
-  footer: { flexDirection: 'row', justifyContent: 'center' },
-  footerText: { fontSize: 14, color: '#888' },
+  eyeBtn:    { paddingLeft: 8, paddingVertical: 14 },
+  btnOuter:  { borderRadius: 14, overflow: 'hidden', marginTop: 8, marginBottom: 24 },
+  btnInner:  { paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
+  btnText:   { fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.3 },
+  footer:    { flexDirection: 'row', justifyContent: 'center' },
+  footerText:{ fontSize: 14, color: '#888' },
   loginLink: { fontSize: 14, color: '#1a7a4a', fontWeight: '700' },
 });
