@@ -9,8 +9,13 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: '#ffffff',
-          borderTopColor: '#e0e0e0',
-          paddingBottom: 4,
+          borderTopColor: '#e8e8e8',
+          paddingBottom: 6,
+          height: 60,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
         },
       }}
     >

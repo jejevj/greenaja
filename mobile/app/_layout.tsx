@@ -7,17 +7,16 @@ import { Colors, ThemeManager } from 'react-native-ui-lib';
 
 SplashScreen.preventAutoHideAsync();
 
-ThemeManager.setComponentTheme('Button', {
-  backgroundColor: Colors.green30,
-  borderRadius: 10,
-});
-
 Colors.loadColors({
   primaryGreen: '#1a7a4a',
   lightGreen: '#4caf50',
   darkGreen: '#0d4a2c',
   accent: '#f9a825',
   background: '#f4f9f6',
+});
+
+ThemeManager.setComponentTheme('Button', {
+  borderRadius: 12,
 });
 
 export default function RootLayout() {
@@ -28,7 +27,9 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
