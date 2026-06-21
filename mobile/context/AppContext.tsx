@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { registerForPushNotifications } from '../hooks/useNotifications';
 
 export type Address = {
   id: string; label: string; name: string; phone: string;
@@ -26,8 +27,8 @@ export type UserProfile = {
   email: string;
   phone: string;
   gender: 'male' | 'female' | '';
-  birthdate: string;  // 'YYYY-MM-DD'
-  avatar: string;     // initials fallback
+  birthdate: string;
+  avatar: string;
 };
 
 export type NotifSettings = {
@@ -45,6 +46,7 @@ interface AppState {
   vouchers:       Voucher[];
   user:           UserProfile;
   notifSettings:  NotifSettings;
+  pushToken:      string | null;   // ← token untuk dikirim ke backend
   setOrders:      (o: Order[]) => void;
   setAddresses:   (a: Address[]) => void;
   addAddress:     (a: Address) => void;
@@ -80,48 +82,53 @@ const SEED_ADDRESSES: Address[] = [
 
 const SEED_VOUCHERS: Voucher[] = [
   { id: 'v1', code: 'GREENSEGAR10', title: 'Diskon 10% Sayuran Segar',
-    description: 'Dapatkan potongan 10% untuk semua produk kategori sayuran segar. Berlaku untuk pembelian pertama bulan ini.',
+    description: 'Dapatkan potongan 10% untuk semua produk kategori sayuran segar.',
     type: 'percent', value: 10, minPurchase: 50000, maxDiscount: 15000, expiry: '30 Jun 2026', status: 'active' },
   { id: 'v2', code: 'ONGKIRGRATIS', title: 'Gratis Ongkos Kirim',
-    description: 'Nikmati gratis ongkir ke seluruh wilayah Jabodetabek. Tidak ada minimum pembelian. Berlaku 1x per akun.',
+    description: 'Nikmati gratis ongkir ke seluruh wilayah Jabodetabek.',
     type: 'ongkir', value: 0, minPurchase: 0, expiry: '25 Jun 2026', status: 'active' },
   { id: 'v3', code: 'HEMAT20RB', title: 'Potongan Rp 20.000',
-    description: 'Potongan langsung Rp 20.000 untuk setiap pembelian di atas Rp 100.000. Berlaku semua kategori produk.',
+    description: 'Potongan langsung Rp 20.000 untuk pembelian di atas Rp 100.000.',
     type: 'flat', value: 20000, minPurchase: 100000, expiry: '15 Jul 2026', status: 'active' },
   { id: 'v4', code: 'WELCOME5', title: 'Welcome Bonus 5%',
-    description: 'Bonus selamat datang untuk member baru GreenAja. Sudah digunakan pada pesanan pertamamu.',
+    description: 'Bonus selamat datang untuk member baru GreenAja.',
     type: 'percent', value: 5, minPurchase: 0, maxDiscount: 10000, expiry: '01 Jun 2026', status: 'used', usedAt: '15 Mei 2026' },
   { id: 'v5', code: 'RAMADAN25', title: 'Spesial Ramadan 25%',
-    description: 'Voucher spesial Ramadan sudah tidak berlaku. Nantikan promo berikutnya!',
+    description: 'Voucher spesial Ramadan sudah tidak berlaku.',
     type: 'percent', value: 25, minPurchase: 75000, maxDiscount: 30000, expiry: '10 Apr 2026', status: 'expired' },
 ];
 
 const SEED_USER: UserProfile = {
-  name: 'Budi Santoso',
-  email: 'budi@greenaja.id',
-  phone: '08123456789',
-  gender: 'male',
-  birthdate: '1995-06-15',
-  avatar: 'BS',
+  name: 'Budi Santoso', email: 'budi@greenaja.id', phone: '08123456789',
+  gender: 'male', birthdate: '1995-06-15', avatar: 'BS',
 };
 
 const SEED_NOTIF: NotifSettings = {
-  orderUpdate: true,
-  promo: true,
-  newProduct: false,
-  review: true,
-  emailNotif: true,
-  smsNotif: false,
+  orderUpdate: true, promo: true, newProduct: false,
+  review: true, emailNotif: true, smsNotif: false,
 };
 
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [orders,       setOrders]       = useState<Order[]>(DUMMY_ORDERS);
-  const [addresses,    setAddresses]    = useState<Address[]>(SEED_ADDRESSES);
+  const [orders,        setOrders]      = useState<Order[]>(DUMMY_ORDERS);
+  const [addresses,     setAddresses]   = useState<Address[]>(SEED_ADDRESSES);
   const [vouchers]                      = useState<Voucher[]>(SEED_VOUCHERS);
-  const [user,         setUserState]    = useState<UserProfile>(SEED_USER);
+  const [user,          setUserState]   = useState<UserProfile>(SEED_USER);
   const [notifSettings, setNotifState]  = useState<NotifSettings>(SEED_NOTIF);
+  const [pushToken,     setPushToken]   = useState<string | null>(null);
+
+  // ── Daftarkan push notification saat app pertama kali load
+  useEffect(() => {
+    registerForPushNotifications().then(token => {
+      if (token) {
+        setPushToken(token);
+        // TODO: kirim token ke backend API kamu:
+        // api.post('/users/push-token', { token });
+        console.log('[GreenAja] Push token disimpan:', token);
+      }
+    });
+  }, []);
 
   const addAddress    = (a: Address) => setAddresses(prev => [...prev, a]);
   const removeAddress = (id: string) =>
@@ -148,7 +155,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      orders, addresses, vouchers, user, notifSettings,
+      orders, addresses, vouchers, user, notifSettings, pushToken,
       setOrders, setAddresses, addAddress, removeAddress, setPrimary,
       updateUser, updateNotif,
       activeOrderCount, needReviewCount, hasAddress, primaryAddress,

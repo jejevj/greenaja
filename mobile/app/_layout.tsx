@@ -1,17 +1,31 @@
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
-import { useColorScheme } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { AppProvider } from '../context/AppContext';
+import { useNotificationListener } from '../hooks/useNotifications';
+import * as Notifications from 'expo-notifications';
+
+// ── Tangkap notifikasi saat app dibuka dari killed state
+export async function getInitialNotification() {
+  const response = await Notifications.getLastNotificationResponseAsync();
+  return response;
+}
+
+function RootLayoutNav() {
+  // Listener aktif selama app hidup
+  useNotificationListener();
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
-  const scheme = useColorScheme();
   return (
     <AppProvider>
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(auth)" />
-      </Stack>
+      <RootLayoutNav />
     </AppProvider>
   );
 }

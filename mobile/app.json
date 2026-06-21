@@ -21,7 +21,12 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#1a7a4a"
       },
-      "package": "com.greenaja.app"
+      "package": "com.greenaja.app",
+      "permissions": [
+        "NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -30,13 +35,29 @@
     },
     "plugins": [
       [
-      "expo-location", {
-        "locationWhenInUsePermission": "Izinkan GreenAja mengakses lokasi untuk pengiriman"
-      }],
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Izinkan GreenAja mengakses lokasi untuk pengiriman"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#1A7A4A",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ],
       "expo-router",
       "expo-font",
       "expo-asset"
     ],
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    },
     "experiments": {
       "typedRoutes": true
     }
