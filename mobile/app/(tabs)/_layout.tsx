@@ -16,6 +16,7 @@ export default function MainLayout() {
         <Stack.Screen name="vouchers" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="change-password" />
+        <Stack.Screen name="deactivate-account" />
         <Stack.Screen name="cart" />
         <Stack.Screen name="checkout" />
         <Stack.Screen name="order-success" options={{ animation: 'fade', gestureEnabled: false }} />
