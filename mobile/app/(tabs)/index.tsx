@@ -11,10 +11,10 @@ import { router } from 'expo-router';
 import { LIGHT, DARK } from '../../constants/Theme';
 import ProductBottomSheet, { ProductSheetItem } from '../../components/ProductBottomSheet';
 import { ALL_PRODUCTS } from './products';
+import { useApp } from '../../context/AppContext';
 
 const { width } = Dimensions.get('window');
 
-// ─── Ad Slideshow ─────────────────────────────────────────────────────────────
 const ADS = [
   { id:'1', title:'Sayur Segar Tiap Pagi',    sub:'Langsung dari kebun ke meja makanmu',        icon:'leaf-outline'             as const, colors:['#1A7A4A','#2A9960'] as [string,string] },
   { id:'2', title:'Gratis Ongkir Hari Ini!',  sub:'Untuk pembelian pertamamu, tanpa minimum',   icon:'bicycle-outline'          as const, colors:['#0D6E8A','#1A9DBF'] as [string,string] },
@@ -109,6 +109,8 @@ type CartEntry = { productId: string; variantId: string; qty: number };
 
 export default function HomeScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
+  const { profileBadgeCount, profileBadgeAlert } = useApp();
+
   const [activeCategory, setActiveCategory] = useState('1');
   const [cart,           setCart]           = useState<CartEntry[]>([]);
   const [sheetProduct,   setSheetProduct]   = useState<ProductSheetItem | null>(null);
@@ -130,10 +132,15 @@ export default function HomeScreen() {
   const inCart   = (id: string) => cart.some(e => e.productId===id);
   const PRODUCTS = ALL_PRODUCTS.slice(0, 6);
 
+  // Hitung warna badge profil
+  const showProfileBadge = profileBadgeAlert || profileBadgeCount > 0;
+  const profileBadgeBg   = profileBadgeAlert ? '#EF4444' : t.primary;
+  const profileBadgeLabel = profileBadgeAlert ? '!' : String(profileBadgeCount > 9 ? '9+' : profileBadgeCount);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top']}>
 
-      {/* ── STICKY HEADER ── */}
+      {/* STICKY HEADER */}
       <Animated.View style={[
         styles.stickyHeader,
         {
@@ -145,24 +152,40 @@ export default function HomeScreen() {
           elevation:     headerShadow,
         },
       ]}>
-        {/* App Bar */}
         <View style={styles.topBar}>
           <View>
-            <Text style={[styles.greeting, { color: t.textSub }]}>Selamat datang 🌱</Text>
+            <Text style={[styles.greeting, { color: t.textSub }]}>Selamat datang</Text>
             <Text style={[styles.topTitle,  { color: t.text    }]}>GreenAja Market</Text>
           </View>
           <View style={styles.topActions}>
-            <TouchableOpacity style={[styles.iconBtn, { backgroundColor:t.surface, borderColor:t.border }]} onPress={() => router.push('/(tabs)/cart')}>
+            {/* Icon keranjang */}
+            <TouchableOpacity
+              style={[styles.iconBtn, { backgroundColor: t.surface, borderColor: t.border }]}
+              onPress={() => router.push('/(tabs)/cart')}
+            >
               <Ionicons name="bag-outline" size={20} color={t.text} />
-              {cartCount > 0 && (<View style={[styles.badge, { backgroundColor:t.primary }]}><Text style={styles.badgeText}>{cartCount}</Text></View>)}
+              {cartCount > 0 && (
+                <View style={[styles.badge, { backgroundColor: t.primary }]}>
+                  <Text style={styles.badgeText}>{cartCount > 9 ? '9+' : cartCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.iconBtn, { backgroundColor:t.surface, borderColor:t.border }]} onPress={() => router.push('/(tabs)/profile')}>
+
+            {/* Icon profil + badge */}
+            <TouchableOpacity
+              style={[styles.iconBtn, { backgroundColor: t.surface, borderColor: t.border }]}
+              onPress={() => router.push('/(tabs)/profile')}
+            >
               <Ionicons name="person-outline" size={20} color={t.text} />
+              {showProfileBadge && (
+                <View style={[styles.badge, { backgroundColor: profileBadgeBg }]}>
+                  <Text style={styles.badgeText}>{profileBadgeLabel}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Search bar — tap → navigasi ke /search */}
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => router.push('/(tabs)/search')}
@@ -182,7 +205,6 @@ export default function HomeScreen() {
       >
         <View style={{ marginTop: 16 }}><AdSlideshow t={t} /></View>
 
-        {/* PROMO */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.promoList}>
           {PROMOS.map(p => (
             <TouchableOpacity key={p.id} activeOpacity={0.82}>
@@ -195,7 +217,6 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        {/* CATEGORIES — tap → ke /products?category=xxx */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catList}>
           {CATEGORIES.map(c => {
             const active = activeCategory === c.id;
@@ -214,10 +235,8 @@ export default function HomeScreen() {
           })}
         </ScrollView>
 
-        {/* PRODUCTS */}
         <View style={styles.sectionRow}>
           <Text style={[styles.sectionTitle, { color: t.text }]}>Produk Segar</Text>
-          {/* "Lihat semua" → ke /products */}
           <TouchableOpacity onPress={() => router.push('/(tabs)/products')} style={styles.seeAllBtn}>
             <Text style={[styles.seeAllText, { color: t.primary }]}>Lihat semua</Text>
             <Ionicons name="chevron-forward-outline" size={14} color={t.primary} />
@@ -261,7 +280,6 @@ export default function HomeScreen() {
           })}
         </View>
 
-        {/* RECOMMENDATIONS */}
         <View style={styles.sectionRow}>
           <Text style={[styles.sectionTitle, { color: t.text }]}>Untukmu Hari Ini</Text>
         </View>
@@ -281,7 +299,6 @@ export default function HomeScreen() {
         </ScrollView>
       </Animated.ScrollView>
 
-      {/* FLOATING CART */}
       {cartCount > 0 && (
         <TouchableOpacity style={styles.floatCartOuter} onPress={() => router.push('/(tabs)/cart')} activeOpacity={0.9}>
           <LinearGradient colors={['#1A7A4A','#2A9960']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.floatCartInner}>
@@ -310,7 +327,7 @@ const styles = StyleSheet.create({
   topTitle:       { fontSize:20, fontWeight:'800', letterSpacing:-0.3 },
   topActions:     { flexDirection:'row', gap:8 },
   iconBtn:        { width:40, height:40, borderRadius:12, borderWidth:1, alignItems:'center', justifyContent:'center' },
-  badge:          { position:'absolute', top:-4, right:-4, width:17, height:17, borderRadius:9, alignItems:'center', justifyContent:'center' },
+  badge:          { position:'absolute', top:-4, right:-4, minWidth:17, height:17, borderRadius:9, alignItems:'center', justifyContent:'center', paddingHorizontal:3 },
   badgeText:      { fontSize:9, color:'#fff', fontWeight:'800' },
   searchBarFake:  { flexDirection:'row', alignItems:'center', marginHorizontal:20, borderRadius:14, borderWidth:1.5, paddingHorizontal:14, height:48, gap:10 },
   searchPlaceholder: { flex:1, fontSize:14 },
