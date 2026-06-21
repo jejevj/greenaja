@@ -83,7 +83,10 @@ export default function OrderSuccessScreen() {
             <SectionHeader t={t} icon="receipt-outline" title="Detail Pesanan" />
             <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
               {ORDER.items.map((item, idx) => (
-                <View key={idx} style={[styles.itemRow, idx < ORDER.items.length - 1 && { borderBottomWidth: 1, borderColor: t.border }]}>
+                <View
+                  key={idx}
+                  style={[styles.itemRow, idx < ORDER.items.length - 1 && { borderBottomWidth: 1, borderColor: t.border }]}
+                >
                   <View style={[styles.itemDot, { backgroundColor: t.accent }]}>
                     <Ionicons name="leaf-outline" size={14} color={t.primary} />
                   </View>
@@ -114,10 +117,12 @@ export default function OrderSuccessScreen() {
             </View>
           </View>
 
-          {/* ── TRACKING PREVIEW ── */}
+          {/* ── STATUS PESANAN (mini steps only, no full-track button) ── */}
           <View style={styles.section}>
             <SectionHeader t={t} icon="navigate-outline" title="Status Pesanan" />
             <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+
+              {/* Active banner */}
               <View style={[styles.activeBanner, { backgroundColor: '#FEF3C7', borderColor: '#F59E0B' }]}>
                 <View style={[styles.activeBannerIcon, { backgroundColor: '#FDE68A' }]}>
                   <Ionicons name="cube-outline" size={18} color="#D97706" />
@@ -130,41 +135,34 @@ export default function OrderSuccessScreen() {
               </View>
 
               {/* Mini steps */}
-              {[
-                { label: 'Pembayaran Diterima', time: '03:48',  done: true },
-                { label: 'Pesanan Dikonfirmasi', time: '03:49', done: true },
-                { label: 'Sedang Dikemas',       time: null,    active: true },
-                { label: 'Dalam Pengiriman',     time: null,    done: false },
-                { label: 'Pesanan Tiba',         time: null,    done: false },
-              ].map((s, i, arr) => (
+              {([
+                { label: 'Pembayaran Diterima',  time: '03:48', done: true,  active: false },
+                { label: 'Pesanan Dikonfirmasi', time: '03:49', done: true,  active: false },
+                { label: 'Sedang Dikemas',       time: null,    done: false, active: true  },
+                { label: 'Dalam Pengiriman',     time: null,    done: false, active: false },
+                { label: 'Pesanan Tiba',         time: null,    done: false, active: false },
+              ] as { label: string; time: string | null; done: boolean; active: boolean }[]).map((s, i, arr) => (
                 <View key={i} style={styles.miniRow}>
                   <View style={styles.miniDotCol}>
                     <View style={[
                       styles.miniDot,
-                      s.done    && { backgroundColor: t.primary },
-                      (s as any).active && { backgroundColor: '#F59E0B' },
-                      !s.done && !(s as any).active && { backgroundColor: t.border },
+                      s.done   && { backgroundColor: t.primary },
+                      s.active && { backgroundColor: '#F59E0B' },
+                      !s.done && !s.active && { backgroundColor: t.border },
                     ]} />
-                    {i < arr.length - 1 && <View style={[styles.miniLine, { backgroundColor: s.done ? t.primary : t.border }]} />}
+                    {i < arr.length - 1 && (
+                      <View style={[styles.miniLine, { backgroundColor: s.done ? t.primary : t.border }]} />
+                    )}
                   </View>
                   <Text style={[
                     styles.miniLabel,
-                    { color: s.done ? t.text : (s as any).active ? '#92400E' : t.textSub },
-                    (s as any).active && { fontWeight: '700' },
+                    { color: s.done ? t.text : s.active ? '#92400E' : t.textSub },
+                    s.active && { fontWeight: '700' },
                   ]}>
                     {s.label}{s.time ? `  ${s.time} WIB` : ''}
                   </Text>
                 </View>
               ))}
-
-              <TouchableOpacity
-                style={[styles.fullTrackBtn, { borderColor: t.primary, backgroundColor: t.primaryMuted }]}
-                onPress={() => router.push({ pathname: '/(tabs)/order-detail', params: { orderId: ORDER.id } })}
-              >
-                <Ionicons name="navigate-outline" size={15} color={t.primary} />
-                <Text style={[styles.fullTrackBtnText, { color: t.primary }]}>Lihat Tracking Lengkap</Text>
-                <Ionicons name="chevron-forward-outline" size={14} color={t.primary} />
-              </TouchableOpacity>
             </View>
           </View>
 
@@ -278,8 +276,6 @@ const styles = StyleSheet.create({
   miniDot:           { width: 10, height: 10, borderRadius: 5 },
   miniLine:          { width: 2, height: 18, marginTop: 2 },
   miniLabel:         { flex: 1, fontSize: 12, paddingVertical: 2 },
-  fullTrackBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1.5, borderRadius: 12, paddingVertical: 12, marginTop: 14 },
-  fullTrackBtnText:  { fontSize: 13, fontWeight: '700', flex: 1, textAlign: 'center' },
   bottomBar:         { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', gap: 12, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 32 },
   secondaryBtn:      { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1.5, borderRadius: 14, paddingVertical: 14 },
   secondaryBtnText:  { fontSize: 14, fontWeight: '700' },
