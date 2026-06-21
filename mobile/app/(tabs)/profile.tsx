@@ -12,9 +12,10 @@ import { useApp } from '../../context/AppContext';
 export default function ProfileScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const {
+    orders,
     activeOrderCount, needReviewCount,
     hasAddress, addresses,
-    favFarmers, activeVoucherCount,
+    activeVoucherCount,
   } = useApp();
 
   type MenuBadge = { count?: number; alert?: boolean } | null;
@@ -39,11 +40,6 @@ export default function ProfileScreen() {
       badge: !hasAddress ? { alert: true } : null,
     },
     {
-      label: 'Petani Favorit', icon: 'heart-outline',
-      sub: `${favFarmers} petani tersimpan`,
-      badge: null,
-    },
-    {
       label: 'Voucher', icon: 'pricetag-outline', route: '/(tabs)/vouchers',
       sub: activeVoucherCount > 0 ? `${activeVoucherCount} voucher aktif` : 'Tidak ada voucher aktif',
       badge: activeVoucherCount > 0 ? { count: activeVoucherCount } : null,
@@ -63,18 +59,16 @@ export default function ProfileScreen() {
   const totalBadge = MENU.reduce((sum, m) => sum + (m.badge?.count ?? 0), 0)
     + (MENU.some(m => m.badge?.alert) ? 1 : 0);
 
-  // Stats row: Pesanan | Alamat | Favorit
+  // Stats row: Pesanan | Alamat | Voucher
   const STATS = [
-    { val: String(activeOrderCount + 3), lbl: 'Pesanan',  icon: 'cube-outline',     route: '/(tabs)/orders' },
-    { val: String(addresses.length),     lbl: 'Alamat',   icon: 'location-outline', route: '/(tabs)/address' },
-    { val: String(favFarmers),            lbl: 'Favorit',  icon: 'heart-outline',    route: null },
+    { val: String(orders.length),         lbl: 'Pesanan', icon: 'cube-outline',     route: '/(tabs)/orders' },
+    { val: String(addresses.length),      lbl: 'Alamat',  icon: 'location-outline', route: '/(tabs)/address' },
+    { val: String(activeVoucherCount),    lbl: 'Voucher', icon: 'pricetag-outline', route: '/(tabs)/vouchers' },
   ];
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -93,14 +87,13 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Profile Card */}
         <View style={[styles.profileCard, { backgroundColor: t.surface, borderColor: t.border }]}>
           <View style={[styles.avatarBox, { backgroundColor: t.primaryMuted }]}>
             <Text style={[styles.avatarText, { color: t.primary }]}>GA</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.userName,   { color: t.text    }]}>GreenAja User</Text>
-            <Text style={[styles.userEmail,  { color: t.textSub }]}>user@greenaja.id</Text>
+            <Text style={[styles.userName, { color: t.text }]}>GreenAja User</Text>
+            <Text style={[styles.userEmail, { color: t.textSub }]}>user@greenaja.id</Text>
             <View style={[styles.memberBadge, { backgroundColor: t.primaryMuted }]}>
               <Ionicons name="shield-checkmark-outline" size={12} color={t.primary} />
               <Text style={[styles.memberText, { color: t.primary }]}>Member Aktif</Text>
@@ -111,7 +104,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Stats: Pesanan | Alamat | Favorit */}
         <View style={[styles.statsCard, { backgroundColor: t.surface, borderColor: t.border }]}>
           {STATS.map((s, i) => (
             <React.Fragment key={i}>
@@ -129,7 +121,6 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        {/* Menu */}
         <View style={[styles.menuCard, { backgroundColor: t.surface, borderColor: t.border }]}>
           {MENU.map((item, i) => {
             const hasCount = (item.badge?.count ?? 0) > 0;
@@ -144,9 +135,7 @@ export default function ProfileScreen() {
                 activeOpacity={0.7}
                 onPress={() => item.route ? router.push(item.route as any) : undefined}
               >
-                <View style={[styles.menuIconBox, {
-                  backgroundColor: hasAlert ? '#FEE2E2' : t.accent,
-                }]}>
+                <View style={[styles.menuIconBox, { backgroundColor: hasAlert ? '#FEE2E2' : t.accent }]}>
                   <Ionicons name={item.icon} size={18} color={hasAlert ? '#EF4444' : t.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -167,7 +156,8 @@ export default function ProfileScreen() {
                   </View>
                 )}
                 <Ionicons
-                  name="chevron-forward-outline" size={18}
+                  name="chevron-forward-outline"
+                  size={18}
                   color={hasAlert ? '#EF4444' : item.route ? t.primary : t.textSub}
                 />
               </TouchableOpacity>
@@ -175,7 +165,6 @@ export default function ProfileScreen() {
           })}
         </View>
 
-        {/* Logout */}
         <TouchableOpacity
           style={[styles.logoutBtn, { backgroundColor: t.surface, borderColor: t.border }]}
           onPress={() => router.replace('/(auth)/login')}
