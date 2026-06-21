@@ -12,6 +12,7 @@ export default function MainLayout() {
         <Stack.Screen name="explore" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="cart" />
+        <Stack.Screen name="checkout" />
       </Stack>
     </>
   );

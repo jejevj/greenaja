@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   ScrollView, StyleSheet, View, Text,
-  TouchableOpacity, useColorScheme,
+  TouchableOpacity, useColorScheme, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,14 +9,49 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LIGHT, DARK } from '../../constants/Theme';
 
+// ── Dummy addresses ─────────────────────────────────────────────────────────
+const DUMMY_ADDRESSES = [
+  {
+    id: '1',
+    label: 'Rumah',
+    name: 'Budi Santoso',
+    phone: '08123456789',
+    address: 'Jl. Melati No. 12, RT 03/RW 05',
+    city: 'Bogor, Jawa Barat 16151',
+    isPrimary: true,
+  },
+  {
+    id: '2',
+    label: 'Kantor',
+    name: 'Budi Santoso',
+    phone: '08123456789',
+    address: 'Jl. Sudirman Kav. 52-53, Lantai 8',
+    city: 'Jakarta Selatan, DKI Jakarta 12190',
+    isPrimary: false,
+  },
+  {
+    id: '3',
+    label: 'Orang Tua',
+    name: 'Siti Rahayu',
+    phone: '08567891234',
+    address: 'Jl. Nusa Indah No. 7, Perumahan Griya Asri',
+    city: 'Depok, Jawa Barat 16413',
+    isPrimary: false,
+  },
+];
+
 const INIT_ITEMS = [
-  { id: '1', name: 'Bayam Segar',   price: 4500,  unit: '/ikat', farm: 'Kebun Pak Budi', qty: 1 },
-  { id: '2', name: 'Tomat Organik', price: 12000, unit: '/kg',   farm: 'Farm Cisarua',   qty: 1 },
+  { id: '1', name: 'Bayam Segar',   price: 4500,  unit: '/ikat', farm: 'Kebun Pak Budi', qty: 2 },
+  { id: '2', name: 'Tomat Organik', price: 12000, unit: '/500g', farm: 'Farm Cisarua',   qty: 1 },
+  { id: '3', name: 'Wortel Baby',   price: 9000,  unit: '/250g', farm: 'Farm Lembang',   qty: 1 },
 ];
 
 export default function CartScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const [items, setItems] = useState(INIT_ITEMS);
+  const [selectedAddress, setSelectedAddress] = useState(DUMMY_ADDRESSES[0].id);
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
+  const [locLoading, setLocLoading] = useState(false);
 
   const updateQty = (id: string, delta: number) =>
     setItems(prev =>
@@ -24,8 +59,42 @@ export default function CartScreen() {
           .filter(i => i.qty > 0)
     );
 
-  const total = items.reduce((s, i) => s + i.price * i.qty, 0);
-  const fmt = (n: number) => 'Rp ' + n.toLocaleString('id-ID');
+  const total    = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const fmt      = (n: number) => 'Rp ' + n.toLocaleString('id-ID');
+  const active   = DUMMY_ADDRESSES.find(a => a.id === selectedAddress)!;
+
+  // Simulasi "Gunakan Lokasi Saat Ini"
+  const handleGetLocation = () => {
+    setLocLoading(true);
+    setTimeout(() => {
+      setLocLoading(false);
+      Alert.alert(
+        'Lokasi Ditemukan',
+        'Jl. Raya Pajajaran No. 44, Bogor Tengah, Kota Bogor 16151\n\nAlamat berhasil dideteksi dari GPS.',
+        [
+          { text: 'Batal', style: 'cancel' },
+          {
+            text: 'Gunakan Alamat Ini',
+            onPress: () => {
+              // Pada implementasi nyata: simpan ke state sebagai alamat baru
+              Alert.alert('✓ Tersimpan', 'Lokasi saat ini digunakan sebagai alamat pengiriman.');
+            },
+          },
+        ]
+      );
+    }, 1500);
+  };
+
+  const handleCheckout = () => {
+    router.push({
+      pathname: '/(tabs)/checkout',
+      params: {
+        total: String(total),
+        addressId: selectedAddress,
+        itemCount: String(items.length),
+      },
+    });
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top']}>
@@ -46,7 +115,7 @@ export default function CartScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 160, paddingTop: 4 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 180, paddingTop: 4 }}
       >
         {items.length === 0 ? (
           <View style={styles.empty}>
@@ -64,6 +133,90 @@ export default function CartScreen() {
           </View>
         ) : (
           <>
+            {/* ── ALAMAT PENGIRIMAN ── */}
+            <Text style={[styles.sectionLabel, { color: t.text }]}>Alamat Pengiriman</Text>
+
+            {/* Card alamat aktif */}
+            <View style={[styles.addressCard, { backgroundColor: t.surface, borderColor: t.primary }]}>
+              <View style={styles.addressTop}>
+                <View style={[styles.addressLabelBadge, { backgroundColor: t.primaryMuted }]}>
+                  <Ionicons name="location-outline" size={12} color={t.primary} />
+                  <Text style={[styles.addressLabelText, { color: t.primary }]}>{active.label}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setShowAddressPicker(true)}
+                  style={[styles.changeBtn, { borderColor: t.primary }]}
+                >
+                  <Text style={[styles.changeBtnText, { color: t.primary }]}>Ganti</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={[styles.addressName, { color: t.text }]}>{active.name}</Text>
+              <Text style={[styles.addressPhone, { color: t.textSub }]}>{active.phone}</Text>
+              <Text style={[styles.addressStreet, { color: t.text }]}>{active.address}</Text>
+              <Text style={[styles.addressCity, { color: t.textSub }]}>{active.city}</Text>
+
+              {/* Gunakan Lokasi Saat Ini */}
+              <TouchableOpacity
+                style={[styles.gpsBtn, { borderColor: t.border, backgroundColor: t.accent }]}
+                onPress={handleGetLocation}
+                disabled={locLoading}
+              >
+                <Ionicons
+                  name={locLoading ? 'sync-outline' : 'navigate-outline'}
+                  size={15}
+                  color={t.primary}
+                />
+                <Text style={[styles.gpsBtnText, { color: t.primary }]}>
+                  {locLoading ? 'Mendeteksi lokasi...' : 'Gunakan Lokasi Saat Ini'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Address Picker Modal */}
+            {showAddressPicker && (
+              <View style={[styles.pickerOverlay, { backgroundColor: t.surface, borderColor: t.border }]}>
+                <View style={styles.pickerHeader}>
+                  <Text style={[styles.pickerTitle, { color: t.text }]}>Pilih Alamat</Text>
+                  <TouchableOpacity onPress={() => setShowAddressPicker(false)}>
+                    <Ionicons name="close-outline" size={22} color={t.text} />
+                  </TouchableOpacity>
+                </View>
+                {DUMMY_ADDRESSES.map(addr => (
+                  <TouchableOpacity
+                    key={addr.id}
+                    style={[
+                      styles.pickerItem,
+                      { borderColor: selectedAddress === addr.id ? t.primary : t.border,
+                        backgroundColor: selectedAddress === addr.id ? t.primaryMuted : t.bg },
+                    ]}
+                    onPress={() => { setSelectedAddress(addr.id); setShowAddressPicker(false); }}
+                  >
+                    <View style={styles.pickerItemTop}>
+                      <View style={[styles.addressLabelBadge, { backgroundColor: t.accent }]}>
+                        <Ionicons name="location-outline" size={11} color={t.primary} />
+                        <Text style={[styles.addressLabelText, { color: t.primary }]}>{addr.label}</Text>
+                      </View>
+                      {selectedAddress === addr.id && (
+                        <Ionicons name="checkmark-circle" size={18} color={t.primary} />
+                      )}
+                    </View>
+                    <Text style={[styles.addressName, { color: t.text, fontSize: 13 }]}>{addr.name}</Text>
+                    <Text style={[styles.addressStreet, { color: t.textSub, fontSize: 12 }]} numberOfLines={1}>{addr.address}</Text>
+                    <Text style={[styles.addressCity, { color: t.textSub, fontSize: 12 }]}>{addr.city}</Text>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={[styles.addAddressBtn, { borderColor: t.primary }]}
+                  onPress={() => setShowAddressPicker(false)}
+                >
+                  <Ionicons name="add-circle-outline" size={16} color={t.primary} />
+                  <Text style={[styles.addAddressText, { color: t.primary }]}>Tambah Alamat Baru</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* ── ITEM CART ── */}
+            <Text style={[styles.sectionLabel, { color: t.text, marginTop: 20 }]}>Produk ({items.length})</Text>
             {items.map(item => (
               <View key={item.id} style={[styles.cartCard, { backgroundColor: t.surface, borderColor: t.border }]}>
                 <View style={[styles.itemIcon, { backgroundColor: t.accent }]}>
@@ -92,19 +245,21 @@ export default function CartScreen() {
               </View>
             ))}
 
-            {/* Summary */}
+            {/* ── RINGKASAN ── */}
             <View style={[styles.summary, { backgroundColor: t.surface, borderColor: t.border }]}>
-              <Text style={[styles.summaryTitle, { color: t.text }]}>Ringkasan</Text>
+              <Text style={[styles.summaryTitle, { color: t.text }]}>Ringkasan Belanja</Text>
               {items.map(i => (
                 <View key={i.id} style={styles.summaryRow}>
                   <Text style={[styles.summaryLabel, { color: t.textSub }]}>{i.name} ×{i.qty}</Text>
                   <Text style={[styles.summaryValue, { color: t.text }]}>{fmt(i.price * i.qty)}</Text>
                 </View>
               ))}
-              <View style={[styles.summaryRow, { borderTopWidth: 1, borderColor: t.border, marginTop: 10, paddingTop: 10 }]}>
-                <Text style={[styles.summaryLabel, { color: t.text, fontWeight: '700' }]}>Total</Text>
-                <Text style={[styles.summaryValue, { color: t.primary, fontWeight: '800', fontSize: 16 }]}>{fmt(total)}</Text>
+              <View style={[styles.divider, { backgroundColor: t.border }]} />
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: t.text, fontWeight: '700' }]}>Total Produk</Text>
+                <Text style={[styles.summaryValue, { color: t.primary, fontWeight: '800', fontSize: 15 }]}>{fmt(total)}</Text>
               </View>
+              <Text style={[styles.summaryNote, { color: t.textSub }]}>* Ongkos kirim & promo dihitung di halaman checkout</Text>
             </View>
           </>
         )}
@@ -113,13 +268,16 @@ export default function CartScreen() {
       {/* Checkout bar */}
       {items.length > 0 && (
         <View style={[styles.checkoutBar, { backgroundColor: t.bg }]}>
-          <TouchableOpacity activeOpacity={0.9} style={styles.checkoutOuter}>
+          <TouchableOpacity activeOpacity={0.9} style={styles.checkoutOuter} onPress={handleCheckout}>
             <LinearGradient
               colors={['#1A7A4A', '#2A9960']}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={styles.checkoutInner}
             >
-              <Text style={styles.checkoutText}>Pesan Sekarang</Text>
+              <View style={styles.checkoutLeft}>
+                <Ionicons name="bag-check-outline" size={18} color="#fff" />
+                <Text style={styles.checkoutText}>Lanjut Checkout</Text>
+              </View>
               <Text style={styles.checkoutAmt}>{fmt(total)}</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -130,33 +288,62 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe:           { flex: 1 },
-  header:         { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
-  backBtn:        { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  title:          { fontSize: 20, fontWeight: '800', letterSpacing: -0.3 },
-  subtitle:       { fontSize: 13, marginTop: 2 },
-  cartCard:       { flexDirection: 'row', alignItems: 'center', borderRadius: 16, borderWidth: 1, padding: 14, marginBottom: 10, gap: 12 },
-  itemIcon:       { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  itemName:       { fontSize: 15, fontWeight: '700', marginBottom: 2 },
-  itemFarm:       { fontSize: 12, marginBottom: 4 },
-  itemPrice:      { fontSize: 14, fontWeight: '700' },
-  stepper:        { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  stepBtn:        { width: 34, height: 34, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  stepQty:        { fontSize: 15, fontWeight: '700', minWidth: 22, textAlign: 'center' },
-  summary:        { borderRadius: 16, borderWidth: 1, padding: 16, marginTop: 6 },
-  summaryTitle:   { fontSize: 15, fontWeight: '700', marginBottom: 12 },
-  summaryRow:     { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  summaryLabel:   { fontSize: 13 },
-  summaryValue:   { fontSize: 13 },
-  checkoutBar:    { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, paddingBottom: 32 },
-  checkoutOuter:  { borderRadius: 16, overflow: 'hidden' },
-  checkoutInner:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 17, paddingHorizontal: 22 },
-  checkoutText:   { fontSize: 16, fontWeight: '700', color: '#fff' },
-  checkoutAmt:    { fontSize: 16, fontWeight: '800', color: 'rgba(255,255,255,0.9)' },
-  empty:          { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyIcon:      { width: 80, height: 80, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  emptyTitle:     { fontSize: 18, fontWeight: '700' },
-  emptySub:       { fontSize: 14 },
-  shopBtn:        { marginTop: 8, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14 },
-  shopBtnText:    { fontSize: 15, fontWeight: '700', color: '#fff' },
+  safe:             { flex: 1 },
+  header:           { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
+  backBtn:          { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  title:            { fontSize: 20, fontWeight: '800', letterSpacing: -0.3 },
+  subtitle:         { fontSize: 13, marginTop: 2 },
+  sectionLabel:     { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  // Address
+  addressCard:      { borderRadius: 16, borderWidth: 1.5, padding: 16, marginBottom: 4, gap: 3 },
+  addressTop:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  addressLabelBadge:{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  addressLabelText: { fontSize: 11, fontWeight: '700' },
+  changeBtn:        { borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 },
+  changeBtnText:    { fontSize: 12, fontWeight: '700' },
+  addressName:      { fontSize: 14, fontWeight: '700' },
+  addressPhone:     { fontSize: 12, marginBottom: 4 },
+  addressStreet:    { fontSize: 13 },
+  addressCity:      { fontSize: 12, marginTop: 2 },
+  gpsBtn:           { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1 },
+  gpsBtnText:       { fontSize: 13, fontWeight: '600' },
+  // Picker
+  pickerOverlay:    { borderRadius: 16, borderWidth: 1, padding: 16, marginVertical: 8, gap: 10 },
+  pickerHeader:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  pickerTitle:      { fontSize: 15, fontWeight: '700' },
+  pickerItem:       { borderWidth: 1.5, borderRadius: 12, padding: 12, gap: 3 },
+  pickerItemTop:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  addAddressBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1.5, borderRadius: 10, paddingVertical: 12, marginTop: 4 },
+  addAddressText:   { fontSize: 13, fontWeight: '700' },
+  // Cart items
+  cartCard:         { flexDirection: 'row', alignItems: 'center', borderRadius: 16, borderWidth: 1, padding: 14, marginBottom: 10, gap: 12 },
+  itemIcon:         { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  itemName:         { fontSize: 15, fontWeight: '700', marginBottom: 2 },
+  itemFarm:         { fontSize: 12, marginBottom: 4 },
+  itemPrice:        { fontSize: 14, fontWeight: '700' },
+  stepper:          { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  stepBtn:          { width: 34, height: 34, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  stepQty:          { fontSize: 15, fontWeight: '700', minWidth: 22, textAlign: 'center' },
+  // Summary
+  summary:          { borderRadius: 16, borderWidth: 1, padding: 16, marginTop: 6 },
+  summaryTitle:     { fontSize: 15, fontWeight: '700', marginBottom: 12 },
+  summaryRow:       { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  summaryLabel:     { fontSize: 13 },
+  summaryValue:     { fontSize: 13 },
+  summaryNote:      { fontSize: 11, marginTop: 8, fontStyle: 'italic' },
+  divider:          { height: 1, marginVertical: 10 },
+  // Checkout
+  checkoutBar:      { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, paddingBottom: 32 },
+  checkoutOuter:    { borderRadius: 16, overflow: 'hidden' },
+  checkoutInner:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 17, paddingHorizontal: 22 },
+  checkoutLeft:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  checkoutText:     { fontSize: 16, fontWeight: '700', color: '#fff' },
+  checkoutAmt:      { fontSize: 16, fontWeight: '800', color: 'rgba(255,255,255,0.9)' },
+  // Empty
+  empty:            { alignItems: 'center', paddingTop: 80, gap: 12 },
+  emptyIcon:        { width: 80, height: 80, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  emptyTitle:       { fontSize: 18, fontWeight: '700' },
+  emptySub:         { fontSize: 14 },
+  shopBtn:          { marginTop: 8, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14 },
+  shopBtnText:      { fontSize: 15, fontWeight: '700', color: '#fff' },
 });
