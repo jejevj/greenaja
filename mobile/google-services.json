@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "511516760033",
+    "project_id": "gree-eda53",
+    "storage_bucket": "gree-eda53.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:511516760033:android:cda08e846c4d0c103e64a0",
+        "android_client_info": {
+          "package_name": "com.greenaja.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAW1gZxmpCOxRjuphPlksNCWyJpc4oG-w0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
