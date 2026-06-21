@@ -29,6 +29,10 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+      "expo-location", {
+        "locationWhenInUsePermission": "Izinkan GreenAja mengakses lokasi untuk pengiriman"
+      }],
       "expo-router",
       "expo-font",
       "expo-asset"
