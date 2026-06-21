@@ -12,7 +12,7 @@ import { useApp } from '../../context/AppContext';
 export default function ProfileScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const {
-    orders,
+    orders, user,
     activeOrderCount, needReviewCount,
     hasAddress, addresses,
     activeVoucherCount,
@@ -28,11 +28,8 @@ export default function ProfileScreen() {
         : needReviewCount > 0
         ? `${needReviewCount} pesanan menunggu ulasan`
         : 'Riwayat & status pesanan',
-      badge: activeOrderCount > 0
-        ? { count: activeOrderCount }
-        : needReviewCount > 0
-        ? { count: needReviewCount }
-        : null,
+      badge: activeOrderCount > 0 ? { count: activeOrderCount }
+        : needReviewCount > 0 ? { count: needReviewCount } : null,
     },
     {
       label: 'Alamat', icon: 'location-outline', route: '/(tabs)/address',
@@ -45,7 +42,7 @@ export default function ProfileScreen() {
       badge: activeVoucherCount > 0 ? { count: activeVoucherCount } : null,
     },
     {
-      label: 'Pengaturan', icon: 'settings-outline',
+      label: 'Pengaturan', icon: 'settings-outline', route: '/(tabs)/settings',
       sub: 'Notifikasi & akun',
       badge: null,
     },
@@ -59,12 +56,18 @@ export default function ProfileScreen() {
   const totalBadge = MENU.reduce((sum, m) => sum + (m.badge?.count ?? 0), 0)
     + (MENU.some(m => m.badge?.alert) ? 1 : 0);
 
-  // Stats row: Pesanan | Alamat | Voucher
   const STATS = [
-    { val: String(orders.length),         lbl: 'Pesanan', icon: 'cube-outline',     route: '/(tabs)/orders' },
-    { val: String(addresses.length),      lbl: 'Alamat',  icon: 'location-outline', route: '/(tabs)/address' },
-    { val: String(activeVoucherCount),    lbl: 'Voucher', icon: 'pricetag-outline', route: '/(tabs)/vouchers' },
+    { val: String(orders.length),      lbl: 'Pesanan', icon: 'cube-outline',     route: '/(tabs)/orders' },
+    { val: String(addresses.length),   lbl: 'Alamat',  icon: 'location-outline', route: '/(tabs)/address' },
+    { val: String(activeVoucherCount), lbl: 'Voucher', icon: 'pricetag-outline', route: '/(tabs)/vouchers' },
   ];
+
+  // Format tanggal lahir
+  const formatBirthdate = (raw: string) => {
+    if (!raw) return '-';
+    const d = new Date(raw);
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top']}>
@@ -87,22 +90,31 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        <View style={[styles.profileCard, { backgroundColor: t.surface, borderColor: t.border }]}>
+        {/* Profile Card — tap buka Edit Profil */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => router.push('/(tabs)/edit-profile')}
+          style={[styles.profileCard, { backgroundColor: t.surface, borderColor: t.border }]}
+        >
           <View style={[styles.avatarBox, { backgroundColor: t.primaryMuted }]}>
-            <Text style={[styles.avatarText, { color: t.primary }]}>GA</Text>
+            <Text style={[styles.avatarText, { color: t.primary }]}>{user.avatar}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.userName, { color: t.text }]}>GreenAja User</Text>
-            <Text style={[styles.userEmail, { color: t.textSub }]}>user@greenaja.id</Text>
+            <Text style={[styles.userName,  { color: t.text }]}>{user.name}</Text>
+            <Text style={[styles.userEmail, { color: t.textSub }]}>{user.email}</Text>
+            {user.birthdate ? (
+              <Text style={[styles.userBirth, { color: t.textSub }]}>{formatBirthdate(user.birthdate)}</Text>
+            ) : null}
             <View style={[styles.memberBadge, { backgroundColor: t.primaryMuted }]}>
               <Ionicons name="shield-checkmark-outline" size={12} color={t.primary} />
               <Text style={[styles.memberText, { color: t.primary }]}>Member Aktif</Text>
             </View>
           </View>
-          <TouchableOpacity style={[styles.editBtn, { borderColor: t.border }]}>
-            <Ionicons name="pencil-outline" size={16} color={t.textSub} />
-          </TouchableOpacity>
-        </View>
+          <View style={[styles.editChip, { backgroundColor: t.accent, borderColor: t.border }]}>
+            <Ionicons name="pencil-outline" size={14} color={t.primary} />
+            <Text style={[styles.editChipText, { color: t.primary }]}>Edit</Text>
+          </View>
+        </TouchableOpacity>
 
         <View style={[styles.statsCard, { backgroundColor: t.surface, borderColor: t.border }]}>
           {STATS.map((s, i) => (
@@ -128,10 +140,7 @@ export default function ProfileScreen() {
             return (
               <TouchableOpacity
                 key={i}
-                style={[
-                  styles.menuRow,
-                  i < MENU.length - 1 && { borderBottomWidth: 1, borderColor: t.border },
-                ]}
+                style={[styles.menuRow, i < MENU.length - 1 && { borderBottomWidth: 1, borderColor: t.border }]}
                 activeOpacity={0.7}
                 onPress={() => item.route ? router.push(item.route as any) : undefined}
               >
@@ -140,10 +149,9 @@ export default function ProfileScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.menuLabel, { color: t.text }]}>{item.label}</Text>
-                  <Text style={[styles.menuSub, {
-                    color: hasAlert ? '#EF4444' : t.textSub,
-                    fontWeight: (hasAlert || hasCount) ? '600' : '400',
-                  }]}>{item.sub}</Text>
+                  <Text style={[styles.menuSub, { color: hasAlert ? '#EF4444' : t.textSub, fontWeight: (hasAlert || hasCount) ? '600' : '400' }]}>
+                    {item.sub}
+                  </Text>
                 </View>
                 {hasCount && (
                   <View style={[styles.menuBadge, { backgroundColor: t.primary }]}>
@@ -155,11 +163,7 @@ export default function ProfileScreen() {
                     <Text style={styles.menuBadgeText}>!</Text>
                   </View>
                 )}
-                <Ionicons
-                  name="chevron-forward-outline"
-                  size={18}
-                  color={hasAlert ? '#EF4444' : item.route ? t.primary : t.textSub}
-                />
+                <Ionicons name="chevron-forward-outline" size={18} color={hasAlert ? '#EF4444' : item.route ? t.primary : t.textSub} />
               </TouchableOpacity>
             );
           })}
@@ -189,10 +193,12 @@ const styles = StyleSheet.create({
   avatarBox:       { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   avatarText:      { fontSize: 20, fontWeight: '800' },
   userName:        { fontSize: 16, fontWeight: '700', marginBottom: 2 },
-  userEmail:       { fontSize: 12, marginBottom: 6 },
+  userEmail:       { fontSize: 12, marginBottom: 2 },
+  userBirth:       { fontSize: 11, marginBottom: 6 },
   memberBadge:     { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, alignSelf: 'flex-start' },
   memberText:      { fontSize: 11, fontWeight: '700' },
-  editBtn:         { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  editChip:        { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6 },
+  editChipText:    { fontSize: 12, fontWeight: '700' },
   statsCard:       { flexDirection: 'row', marginHorizontal: 20, borderRadius: 16, borderWidth: 1, paddingVertical: 18, marginBottom: 12 },
   statItem:        { flex: 1, alignItems: 'center' },
   statVal:         { fontSize: 18, fontWeight: '800', marginBottom: 2 },
