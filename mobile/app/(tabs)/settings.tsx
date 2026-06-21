@@ -12,25 +12,25 @@ import { useApp } from '../../context/AppContext';
 
 // ── Toggle Row
 function ToggleRow({
-  icon, label, sub, value, onChange, t, danger,
+  icon, label, sub, value, onChange, t,
 }: {
   icon: string; label: string; sub?: string;
   value: boolean; onChange: (v: boolean) => void;
-  t: typeof LIGHT; danger?: boolean;
+  t: typeof LIGHT;
 }) {
   return (
-    <View style={[styles.toggleRow]}>
-      <View style={[styles.toggleIcon, { backgroundColor: danger ? '#FEE2E2' : t.accent }]}>
-        <Ionicons name={icon as any} size={18} color={danger ? '#EF4444' : t.primary} />
+    <View style={styles.toggleRow}>
+      <View style={[styles.toggleIcon, { backgroundColor: t.accent }]}>
+        <Ionicons name={icon as any} size={18} color={t.primary} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={[styles.toggleLabel, { color: danger ? '#EF4444' : t.text }]}>{label}</Text>
+        <Text style={[styles.toggleLabel, { color: t.text }]}>{label}</Text>
         {sub && <Text style={[styles.toggleSub, { color: t.textSub }]}>{sub}</Text>}
       </View>
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: t.border, true: danger ? '#EF4444' : t.primary }}
+        trackColor={{ false: t.border, true: t.primary }}
         thumbColor="#fff"
       />
     </View>
@@ -38,9 +38,7 @@ function ToggleRow({
 }
 
 // ── Delete Account Modal
-function DeleteAccountModal({
-  onClose, t,
-}: { onClose: () => void; t: typeof LIGHT }) {
+function DeleteAccountModal({ onClose, t }: { onClose: () => void; t: typeof LIGHT }) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [reason, setReason] = useState('');
   const [confirmText, setConfirmText] = useState('');
@@ -61,7 +59,6 @@ function DeleteAccountModal({
       return;
     }
     onClose();
-    // simulate account deletion → redirect to login
     setTimeout(() => router.replace('/(auth)/login'), 300);
   };
 
@@ -71,7 +68,7 @@ function DeleteAccountModal({
         <Pressable style={[styles.modalSheet, { backgroundColor: t.bg }]} onPress={() => {}}>
           <View style={[styles.dragHandle, { backgroundColor: t.border }]} />
 
-          {/* Step 1 — Peringatan */}
+          {/* Step 1 */}
           {step === 1 && (
             <ScrollView contentContainerStyle={styles.deleteContent} showsVerticalScrollIndicator={false}>
               <View style={styles.deleteIconWrap}>
@@ -83,7 +80,6 @@ function DeleteAccountModal({
               <Text style={[styles.deleteSub, { color: t.textSub }]}>
                 Tindakan ini bersifat permanen dan tidak dapat dibatalkan. Pastikan kamu sudah memahami konsekuensinya.
               </Text>
-
               <View style={[styles.warningCard, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
                 <Text style={[styles.warningTitle, { color: '#991B1B' }]}>Data yang akan dihapus secara permanen:</Text>
                 {[
@@ -99,12 +95,11 @@ function DeleteAccountModal({
                   </View>
                 ))}
               </View>
-
               <View style={[styles.warningCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
                 <Text style={[styles.warningTitle, { color: '#92400E' }]}>Alternatif sebelum hapus akun:</Text>
                 {[
                   'Nonaktifkan notifikasi jika terlalu banyak',
-                  'Ubah kata sandi jika akun dirasa tidak aman',
+                  'Ganti kata sandi jika akun dirasa tidak aman',
                   'Hubungi CS jika ada masalah layanan',
                 ].map((item, i) => (
                   <View key={i} style={styles.warningRow}>
@@ -113,7 +108,6 @@ function DeleteAccountModal({
                   </View>
                 ))}
               </View>
-
               <View style={styles.deleteActions}>
                 <TouchableOpacity style={[styles.cancelDeleteBtn, { borderColor: t.border }]} onPress={onClose}>
                   <Text style={[styles.cancelDeleteText, { color: t.text }]}>Batal, Kembali</Text>
@@ -125,7 +119,7 @@ function DeleteAccountModal({
             </ScrollView>
           )}
 
-          {/* Step 2 — Alasan */}
+          {/* Step 2 */}
           {step === 2 && (
             <ScrollView contentContainerStyle={styles.deleteContent} showsVerticalScrollIndicator={false}>
               <Text style={[styles.deleteTitle, { color: t.text }]}>Alasan Penghapusan</Text>
@@ -134,16 +128,10 @@ function DeleteAccountModal({
                 {REASONS.map((r, i) => (
                   <TouchableOpacity
                     key={i}
-                    style={[
-                      styles.reasonBtn,
-                      { borderColor: reason === r ? '#EF4444' : t.border, backgroundColor: reason === r ? '#FEE2E2' : t.surface },
-                    ]}
+                    style={[styles.reasonBtn, { borderColor: reason === r ? '#EF4444' : t.border, backgroundColor: reason === r ? '#FEE2E2' : t.surface }]}
                     onPress={() => setReason(r)}
                   >
-                    <View style={[
-                      styles.reasonRadio,
-                      { borderColor: reason === r ? '#EF4444' : t.border, backgroundColor: reason === r ? '#EF4444' : 'transparent' },
-                    ]} />
+                    <View style={[styles.reasonRadio, { borderColor: reason === r ? '#EF4444' : t.border, backgroundColor: reason === r ? '#EF4444' : 'transparent' }]} />
                     <Text style={[styles.reasonText, { color: reason === r ? '#991B1B' : t.text }]}>{r}</Text>
                   </TouchableOpacity>
                 ))}
@@ -153,18 +141,14 @@ function DeleteAccountModal({
                   <Ionicons name="arrow-back-outline" size={16} color={t.text} />
                   <Text style={[styles.cancelDeleteText, { color: t.text }]}>Kembali</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.nextDeleteBtn, !reason && { opacity: 0.4 }]}
-                  onPress={() => reason && setStep(3)}
-                  disabled={!reason}
-                >
+                <TouchableOpacity style={[styles.nextDeleteBtn, !reason && { opacity: 0.4 }]} onPress={() => reason && setStep(3)} disabled={!reason}>
                   <Text style={styles.nextDeleteText}>Lanjutkan</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
           )}
 
-          {/* Step 3 — Konfirmasi ketik */}
+          {/* Step 3 */}
           {step === 3 && (
             <ScrollView contentContainerStyle={styles.deleteContent} showsVerticalScrollIndicator={false}>
               <View style={styles.deleteIconWrap}>
@@ -174,9 +158,9 @@ function DeleteAccountModal({
               </View>
               <Text style={[styles.deleteTitle, { color: t.text }]}>Konfirmasi Terakhir</Text>
               <Text style={[styles.deleteSub, { color: t.textSub }]}>
-                Untuk memastikan kamu serius, ketik <Text style={{ fontWeight: '800', color: '#EF4444' }}>{CONFIRM_WORD}</Text> di bawah ini.
+                Untuk memastikan kamu serius, ketik{' '}
+                <Text style={{ fontWeight: '800', color: '#EF4444' }}>{CONFIRM_WORD}</Text>{' '}di bawah ini.
               </Text>
-
               <View style={[styles.confirmInputWrap, {
                 borderColor: confirmText.toUpperCase() === CONFIRM_WORD ? '#EF4444' : t.border,
                 backgroundColor: t.surface,
@@ -190,17 +174,13 @@ function DeleteAccountModal({
                   autoCapitalize="characters"
                 />
               </View>
-
               <View style={styles.deleteActions}>
                 <TouchableOpacity style={[styles.cancelDeleteBtn, { borderColor: t.border }]} onPress={() => setStep(2)}>
                   <Ionicons name="arrow-back-outline" size={16} color={t.text} />
                   <Text style={[styles.cancelDeleteText, { color: t.text }]}>Kembali</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[
-                    styles.finalDeleteBtn,
-                    confirmText.toUpperCase() !== CONFIRM_WORD && { opacity: 0.4 },
-                  ]}
+                  style={[styles.finalDeleteBtn, confirmText.toUpperCase() !== CONFIRM_WORD && { opacity: 0.4 }]}
                   onPress={handleFinalDelete}
                 >
                   <Ionicons name="trash-outline" size={16} color="#fff" />
@@ -248,26 +228,22 @@ export default function SettingsScreen() {
           </View>
           <ToggleRow icon="cube-outline" label="Update Pesanan"
             sub="Status pengiriman & konfirmasi pesanan"
-            value={notifSettings.orderUpdate}
-            onChange={v => updateNotif({ orderUpdate: v })} t={t} />
+            value={notifSettings.orderUpdate} onChange={v => updateNotif({ orderUpdate: v })} t={t} />
           <View style={[styles.divider, { backgroundColor: t.border }]} />
           <ToggleRow icon="pricetag-outline" label="Promo & Voucher"
             sub="Diskon, voucher baru, dan flash sale"
-            value={notifSettings.promo}
-            onChange={v => updateNotif({ promo: v })} t={t} />
+            value={notifSettings.promo} onChange={v => updateNotif({ promo: v })} t={t} />
           <View style={[styles.divider, { backgroundColor: t.border }]} />
           <ToggleRow icon="leaf-outline" label="Produk Baru"
             sub="Hasil panen terbaru dari petani GreenAja"
-            value={notifSettings.newProduct}
-            onChange={v => updateNotif({ newProduct: v })} t={t} />
+            value={notifSettings.newProduct} onChange={v => updateNotif({ newProduct: v })} t={t} />
           <View style={[styles.divider, { backgroundColor: t.border }]} />
           <ToggleRow icon="star-outline" label="Pengingat Ulasan"
             sub="Ingatkan untuk memberi ulasan setelah terima pesanan"
-            value={notifSettings.review}
-            onChange={v => updateNotif({ review: v })} t={t} />
+            value={notifSettings.review} onChange={v => updateNotif({ review: v })} t={t} />
         </View>
 
-        {/* Notifikasi Lainnya */}
+        {/* Saluran Lain */}
         <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.cardIconBox, { backgroundColor: t.accent }]}>
@@ -280,16 +256,14 @@ export default function SettingsScreen() {
           </View>
           <ToggleRow icon="mail-outline" label="Notifikasi Email"
             sub="Ringkasan pesanan & promo dikirim via email"
-            value={notifSettings.emailNotif}
-            onChange={v => updateNotif({ emailNotif: v })} t={t} />
+            value={notifSettings.emailNotif} onChange={v => updateNotif({ emailNotif: v })} t={t} />
           <View style={[styles.divider, { backgroundColor: t.border }]} />
           <ToggleRow icon="chatbubble-outline" label="Notifikasi SMS"
             sub="OTP dan konfirmasi via pesan SMS"
-            value={notifSettings.smsNotif}
-            onChange={v => updateNotif({ smsNotif: v })} t={t} />
+            value={notifSettings.smsNotif} onChange={v => updateNotif({ smsNotif: v })} t={t} />
         </View>
 
-        {/* Keamanan Akun */}
+        {/* Keamanan Akun — hanya Ganti Kata Sandi */}
         <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.cardIconBox, { backgroundColor: t.accent }]}>
@@ -297,31 +271,26 @@ export default function SettingsScreen() {
             </View>
             <View>
               <Text style={[styles.cardTitle, { color: t.text }]}>Keamanan Akun</Text>
-              <Text style={[styles.cardSub, { color: t.textSub }]}>Kata sandi & verifikasi</Text>
+              <Text style={[styles.cardSub, { color: t.textSub }]}>Kelola kata sandi akun kamu</Text>
             </View>
           </View>
-          {[
-            { icon: 'key-outline', label: 'Ganti Kata Sandi', sub: 'Perbarui kata sandi secara berkala' },
-            { icon: 'phone-portrait-outline', label: 'Verifikasi Dua Langkah', sub: 'Tambah lapisan keamanan dengan OTP' },
-            { icon: 'desktop-outline', label: 'Sesi Aktif', sub: 'Lihat & kelola perangkat yang login' },
-          ].map((item, i, arr) => (
-            <View key={i}>
-              {i > 0 && <View style={[styles.divider, { backgroundColor: t.border }]} />}
-              <TouchableOpacity style={styles.menuBtn} activeOpacity={0.7}>
-                <View style={[styles.toggleIcon, { backgroundColor: t.accent }]}>
-                  <Ionicons name={item.icon as any} size={18} color={t.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.toggleLabel, { color: t.text }]}>{item.label}</Text>
-                  <Text style={[styles.toggleSub, { color: t.textSub }]}>{item.sub}</Text>
-                </View>
-                <Ionicons name="chevron-forward-outline" size={18} color={t.textSub} />
-              </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuBtn}
+            activeOpacity={0.7}
+            onPress={() => router.push('/(tabs)/change-password')}
+          >
+            <View style={[styles.toggleIcon, { backgroundColor: t.accent }]}>
+              <Ionicons name="key-outline" size={18} color={t.primary} />
             </View>
-          ))}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.toggleLabel, { color: t.text }]}>Ganti Kata Sandi</Text>
+              <Text style={[styles.toggleSub, { color: t.textSub }]}>Perbarui kata sandi secara berkala untuk keamanan akun</Text>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={18} color={t.primary} />
+          </TouchableOpacity>
         </View>
 
-        {/* Zona Bahaya */}
+        {/* Zona Berbahaya */}
         <View style={[styles.card, { backgroundColor: t.surface, borderColor: '#FECACA' }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.cardIconBox, { backgroundColor: '#FEE2E2' }]}>
@@ -332,11 +301,7 @@ export default function SettingsScreen() {
               <Text style={[styles.cardSub, { color: t.textSub }]}>Tindakan permanen & tidak dapat dibatalkan</Text>
             </View>
           </View>
-
-          <TouchableOpacity
-            style={[styles.deactivateBtn, { borderColor: t.border }]}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity style={[styles.deactivateBtn]} activeOpacity={0.7}>
             <View style={[styles.toggleIcon, { backgroundColor: '#FFFBEB' }]}>
               <Ionicons name="pause-circle-outline" size={18} color="#F59E0B" />
             </View>
@@ -346,14 +311,8 @@ export default function SettingsScreen() {
             </View>
             <Ionicons name="chevron-forward-outline" size={18} color={t.textSub} />
           </TouchableOpacity>
-
           <View style={[styles.divider, { backgroundColor: '#FECACA' }]} />
-
-          <TouchableOpacity
-            style={styles.deleteBtn}
-            activeOpacity={0.8}
-            onPress={() => setShowDeleteModal(true)}
-          >
+          <TouchableOpacity style={styles.deleteBtn} activeOpacity={0.8} onPress={() => setShowDeleteModal(true)}>
             <LinearGradient
               colors={['#DC2626', '#EF4444']}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
@@ -369,9 +328,7 @@ export default function SettingsScreen() {
         <View style={{ height: 20 }} />
       </ScrollView>
 
-      {showDeleteModal && (
-        <DeleteAccountModal onClose={() => setShowDeleteModal(false)} t={t} />
-      )}
+      {showDeleteModal && <DeleteAccountModal onClose={() => setShowDeleteModal(false)} t={t} />}
     </SafeAreaView>
   );
 }
@@ -393,12 +350,11 @@ const styles = StyleSheet.create({
   toggleIcon:       { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   toggleLabel:      { fontSize: 14, fontWeight: '600' },
   toggleSub:        { fontSize: 12, marginTop: 1 },
-  menuBtn:          { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
-  deactivateBtn:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 0 },
+  menuBtn:          { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14 },
+  deactivateBtn:    { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
   deleteBtn:        { margin: 14, marginTop: 12, borderRadius: 12, overflow: 'hidden' },
   deleteBtnGradient: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14 },
   deleteBtnText:    { flex: 1, fontSize: 14, fontWeight: '700', color: '#fff' },
-  // modal
   modalBackdrop:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
   modalSheet:       { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%' },
   dragHandle:       { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 },
