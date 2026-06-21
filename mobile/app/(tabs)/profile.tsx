@@ -8,13 +8,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LIGHT, DARK } from '../../constants/Theme';
 
-const MENU: { label: string; icon: any; sub: string }[] = [
-  { label: 'Pesanan Saya',      icon: 'cube-outline',             sub: 'Riwayat & status pesanan' },
-  { label: 'Alamat',           icon: 'location-outline',          sub: 'Kelola alamat pengiriman'  },
-  { label: 'Petani Favorit',   icon: 'heart-outline',             sub: '4 petani tersimpan'       },
-  { label: 'Voucher',          icon: 'pricetag-outline',          sub: '2 voucher aktif'          },
-  { label: 'Pengaturan',       icon: 'settings-outline',          sub: 'Notifikasi & akun'        },
-  { label: 'Bantuan',          icon: 'help-circle-outline',       sub: 'FAQ & kontak kami'        },
+const MENU: { label: string; icon: any; sub: string; route?: string }[] = [
+  { label: 'Pesanan Saya',    icon: 'cube-outline',        sub: 'Riwayat & status pesanan', route: '/(tabs)/orders' },
+  { label: 'Alamat',         icon: 'location-outline',    sub: 'Kelola alamat pengiriman' },
+  { label: 'Petani Favorit', icon: 'heart-outline',       sub: '4 petani tersimpan' },
+  { label: 'Voucher',        icon: 'pricetag-outline',    sub: '2 voucher aktif' },
+  { label: 'Pengaturan',     icon: 'settings-outline',    sub: 'Notifikasi & akun' },
+  { label: 'Bantuan',        icon: 'help-circle-outline', sub: 'FAQ & kontak kami' },
 ];
 
 export default function ProfileScreen() {
@@ -59,11 +59,15 @@ export default function ProfileScreen() {
             ([val, lbl, icon], i) => (
               <React.Fragment key={i}>
                 {i > 0 && <View style={[styles.statDivider, { backgroundColor: t.border }]} />}
-                <View style={styles.statItem}>
+                <TouchableOpacity
+                  style={styles.statItem}
+                  onPress={() => i === 0 ? router.push('/(tabs)/orders') : undefined}
+                  activeOpacity={i === 0 ? 0.7 : 1}
+                >
                   <Ionicons name={icon as any} size={18} color={t.primary} style={{ marginBottom: 6 }} />
                   <Text style={[styles.statVal, { color: t.text }]}>{val}</Text>
                   <Text style={[styles.statLbl, { color: t.textSub }]}>{lbl}</Text>
-                </View>
+                </TouchableOpacity>
               </React.Fragment>
             )
           )}
@@ -79,6 +83,7 @@ export default function ProfileScreen() {
                 i < MENU.length - 1 && { borderBottomWidth: 1, borderColor: t.border },
               ]}
               activeOpacity={0.7}
+              onPress={() => item.route ? router.push(item.route as any) : undefined}
             >
               <View style={[styles.menuIconBox, { backgroundColor: t.accent }]}>
                 <Ionicons name={item.icon} size={18} color={t.primary} />
@@ -87,7 +92,7 @@ export default function ProfileScreen() {
                 <Text style={[styles.menuLabel, { color: t.text }]}>{item.label}</Text>
                 <Text style={[styles.menuSub, { color: t.textSub }]}>{item.sub}</Text>
               </View>
-              <Ionicons name="chevron-forward-outline" size={18} color={t.textSub} />
+              <Ionicons name="chevron-forward-outline" size={18} color={item.route ? t.primary : t.textSub} />
             </TouchableOpacity>
           ))}
         </View>

@@ -13,7 +13,9 @@ export default function MainLayout() {
         <Stack.Screen name="profile" />
         <Stack.Screen name="cart" />
         <Stack.Screen name="checkout" />
-        <Stack.Screen name="order-success" options={{ animation: 'fade' }} />
+        <Stack.Screen name="order-success" options={{ animation: 'fade', gestureEnabled: false }} />
+        <Stack.Screen name="orders" />
+        <Stack.Screen name="order-detail" />
       </Stack>
     </>
   );
