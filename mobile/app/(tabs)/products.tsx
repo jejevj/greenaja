@@ -11,28 +11,27 @@ import ProductBottomSheet, { ProductSheetItem } from '../../components/ProductBo
 
 const { width } = Dimensions.get('window');
 
-// ─── Shared product data (source of truth) ───────────────────────────────────
 export const ALL_PRODUCTS: (ProductSheetItem & { category: string; rating: number; sold: number })[] = [
-  { id:'1',  name:'Bayam Segar',      farm:'Kebun Pak Budi', tag:'Bestseller', category:'Sayuran', rating:4.9, sold:312, description:'Bayam lokal segar dipanen pagi hari langsung dari kebun organik Bogor.',        variants:[{id:'v1',label:'1 Ikat',        price:4500,  unit:'ikat', stock:30},{id:'v2',label:'3 Ikat',        price:12000,unit:'ikat', stock:15},{id:'v3',label:'5 Ikat',        price:18000,unit:'ikat',stock:8}]  },
-  { id:'2',  name:'Tomat Organik',    farm:'Farm Cisarua',   tag:'Organik',    category:'Sayuran', rating:4.8, sold:204, description:'Tomat cherry organik bersertifikat, tanpa pestisida, rasa manis alami.',       variants:[{id:'v1',label:'250g',          price:7500,  unit:'gram',stock:20},{id:'v2',label:'500g',          price:12000,unit:'gram',stock:12},{id:'v3',label:'1kg',           price:22000,unit:'kg',  stock:0}]   },
-  { id:'3',  name:'Cabai Rawit',      farm:'Kebun Bu Sari',  tag:'Populer',    category:'Rempah',  rating:4.7, sold:178, description:'Cabai rawit merah segar, tingkat kepedasan tinggi, cocok untuk masakan rumah.',  variants:[{id:'v1',label:'100g',          price:6000,  unit:'gram',stock:25},{id:'v2',label:'250g',          price:14000,unit:'gram',stock:10},{id:'v3',label:'500g',          price:26000,unit:'gram',stock:5}]   },
-  { id:'4',  name:'Kangkung',         farm:'Kebun Pak Budi', tag:'Segar',      category:'Sayuran', rating:4.6, sold:156, description:'Kangkung air segar, batang renyah, cocok untuk tumis dan lalapan.',           variants:[{id:'v1',label:'1 Ikat',        price:3500,  unit:'ikat', stock:40},{id:'v2',label:'3 Ikat',        price:9500, unit:'ikat', stock:20}]  },
-  { id:'5',  name:'Wortel Baby',      farm:'Farm Lembang',   tag:'Baru',       category:'Sayuran', rating:4.8, sold:98,  description:'Wortel baby Lembang, manis dan renyah, cocok untuk camilan sehat anak.',      variants:[{id:'v1',label:'250g',          price:9000,  unit:'gram',stock:15},{id:'v2',label:'500g',          price:16500,unit:'gram',stock:8}]   },
-  { id:'6',  name:'Brokoli Hijau',    farm:'Farm Cisarua',   tag:'Organik',    category:'Sayuran', rating:4.9, sold:134, description:'Brokoli segar organik ukuran besar, kaya vitamin C dan serat.',               variants:[{id:'v1',label:'Kecil (~300g)', price:8000,  unit:'buah',stock:12},{id:'v2',label:'Besar (~600g)', price:15000,unit:'buah',stock:6}]   },
-  { id:'7',  name:'Jahe Merah',       farm:'Kebun Bu Sari',  tag:'Organik',    category:'Rempah',  rating:4.7, sold:87,  description:'Jahe merah organik kering, kaya manfaat, cocok untuk minuman kesehatan.',     variants:[{id:'v1',label:'100g',          price:8500,  unit:'gram',stock:30},{id:'v2',label:'250g',          price:19000,unit:'gram',stock:15}]  },
-  { id:'8',  name:'Pisang Cavendish', farm:'Farm Lembang',   tag:'Segar',      category:'Buah',    rating:4.6, sold:211, description:'Pisang Cavendish manis, matang sempurna, dipanen langsung dari kebun.',       variants:[{id:'v1',label:'1 Sisir',       price:12000, unit:'sisir',stock:20},{id:'v2',label:'1 Tandan',       price:35000,unit:'tandan',stock:8}]  },
-  { id:'9',  name:'Mangga Harum Manis',farm:'Kebun Pak Budi',tag:'Populer',    category:'Buah',    rating:4.9, sold:265, description:'Mangga harum manis kualitas premium, manis legit, tanpa serat berlebih.',     variants:[{id:'v1',label:'500g',          price:14000, unit:'gram',stock:18},{id:'v2',label:'1kg',           price:25000,unit:'kg',  stock:9}]   },
-  { id:'10', name:'Kunyit Segar',     farm:'Kebun Bu Sari',  tag:'Lokal',      category:'Rempah',  rating:4.5, sold:63,  description:'Kunyit segar lokal, warna orange cerah, untuk masakan dan jamu tradisional.', variants:[{id:'v1',label:'100g',          price:5000,  unit:'gram',stock:35},{id:'v2',label:'250g',          price:11000,unit:'gram',stock:20}]  },
-  { id:'11', name:'Bayam Merah',      farm:'Farm Cisarua',   tag:'Organik',    category:'Sayuran', rating:4.7, sold:72,  description:'Bayam merah organik kaya antioksidan, cocok untuk salad dan smoothie.',       variants:[{id:'v1',label:'1 Ikat',        price:6000,  unit:'ikat', stock:22}]  },
-  { id:'12', name:'Jeruk Nipis',      farm:'Farm Lembang',   tag:'Segar',      category:'Buah',    rating:4.6, sold:189, description:'Jeruk nipis segar berair, asam segar, cocok untuk minuman dan masakan.',      variants:[{id:'v1',label:'250g (~5 bj)', price:7000,  unit:'gram',stock:40},{id:'v2',label:'500g (~10 bj)',price:12500,unit:'gram',stock:25}]  },
+  { id:'1',  name:'Bayam Segar',       farm:'Kebun Pak Budi', tag:'Bestseller', category:'Sayuran', rating:4.9, sold:312, description:'Bayam lokal segar dipanen pagi hari langsung dari kebun organik Bogor.',        variants:[{id:'v1',label:'1 Ikat',        price:4500,  unit:'ikat', stock:30},{id:'v2',label:'3 Ikat',        price:12000,unit:'ikat', stock:15},{id:'v3',label:'5 Ikat',        price:18000,unit:'ikat',stock:8}]  },
+  { id:'2',  name:'Tomat Organik',     farm:'Farm Cisarua',   tag:'Organik',    category:'Sayuran', rating:4.8, sold:204, description:'Tomat cherry organik bersertifikat, tanpa pestisida, rasa manis alami.',       variants:[{id:'v1',label:'250g',          price:7500,  unit:'gram',stock:20},{id:'v2',label:'500g',          price:12000,unit:'gram',stock:12},{id:'v3',label:'1kg',           price:22000,unit:'kg',  stock:0}]   },
+  { id:'3',  name:'Cabai Rawit',       farm:'Kebun Bu Sari',  tag:'Populer',    category:'Rempah',  rating:4.7, sold:178, description:'Cabai rawit merah segar, tingkat kepedasan tinggi, cocok untuk masakan rumah.',  variants:[{id:'v1',label:'100g',          price:6000,  unit:'gram',stock:25},{id:'v2',label:'250g',          price:14000,unit:'gram',stock:10},{id:'v3',label:'500g',          price:26000,unit:'gram',stock:5}]   },
+  { id:'4',  name:'Kangkung',          farm:'Kebun Pak Budi', tag:'Segar',      category:'Sayuran', rating:4.6, sold:156, description:'Kangkung air segar, batang renyah, cocok untuk tumis dan lalapan.',           variants:[{id:'v1',label:'1 Ikat',        price:3500,  unit:'ikat', stock:40},{id:'v2',label:'3 Ikat',        price:9500, unit:'ikat', stock:20}]  },
+  { id:'5',  name:'Wortel Baby',       farm:'Farm Lembang',   tag:'Baru',       category:'Sayuran', rating:4.8, sold:98,  description:'Wortel baby Lembang, manis dan renyah, cocok untuk camilan sehat anak.',      variants:[{id:'v1',label:'250g',          price:9000,  unit:'gram',stock:15},{id:'v2',label:'500g',          price:16500,unit:'gram',stock:8}]   },
+  { id:'6',  name:'Brokoli Hijau',     farm:'Farm Cisarua',   tag:'Organik',    category:'Sayuran', rating:4.9, sold:134, description:'Brokoli segar organik ukuran besar, kaya vitamin C dan serat.',               variants:[{id:'v1',label:'Kecil (~300g)', price:8000,  unit:'buah',stock:12},{id:'v2',label:'Besar (~600g)', price:15000,unit:'buah',stock:6}]   },
+  { id:'7',  name:'Jahe Merah',        farm:'Kebun Bu Sari',  tag:'Organik',    category:'Rempah',  rating:4.7, sold:87,  description:'Jahe merah organik kering, kaya manfaat, cocok untuk minuman kesehatan.',     variants:[{id:'v1',label:'100g',          price:8500,  unit:'gram',stock:30},{id:'v2',label:'250g',          price:19000,unit:'gram',stock:15}]  },
+  { id:'8',  name:'Pisang Cavendish',  farm:'Farm Lembang',   tag:'Segar',      category:'Buah',    rating:4.6, sold:211, description:'Pisang Cavendish manis, matang sempurna, dipanen langsung dari kebun.',       variants:[{id:'v1',label:'1 Sisir',       price:12000, unit:'sisir',stock:20},{id:'v2',label:'1 Tandan',       price:35000,unit:'tandan',stock:8}]  },
+  { id:'9',  name:'Mangga Harum Manis',farm:'Kebun Pak Budi', tag:'Populer',    category:'Buah',    rating:4.9, sold:265, description:'Mangga harum manis kualitas premium, manis legit, tanpa serat berlebih.',     variants:[{id:'v1',label:'500g',          price:14000, unit:'gram',stock:18},{id:'v2',label:'1kg',           price:25000,unit:'kg',  stock:9}]   },
+  { id:'10', name:'Kunyit Segar',      farm:'Kebun Bu Sari',  tag:'Lokal',      category:'Rempah',  rating:4.5, sold:63,  description:'Kunyit segar lokal, warna orange cerah, untuk masakan dan jamu tradisional.', variants:[{id:'v1',label:'100g',          price:5000,  unit:'gram',stock:35},{id:'v2',label:'250g',          price:11000,unit:'gram',stock:20}]  },
+  { id:'11', name:'Bayam Merah',       farm:'Farm Cisarua',   tag:'Organik',    category:'Sayuran', rating:4.7, sold:72,  description:'Bayam merah organik kaya antioksidan, cocok untuk salad dan smoothie.',       variants:[{id:'v1',label:'1 Ikat',        price:6000,  unit:'ikat', stock:22}]  },
+  { id:'12', name:'Jeruk Nipis',       farm:'Farm Lembang',   tag:'Segar',      category:'Buah',    rating:4.6, sold:189, description:'Jeruk nipis segar berair, asam segar, cocok untuk minuman dan masakan.',      variants:[{id:'v1',label:'250g (~5 bj)', price:7000,  unit:'gram',stock:40},{id:'v2',label:'500g (~10 bj)',price:12500,unit:'gram',stock:25}]  },
 ];
 
 const CATEGORIES = ['Semua', 'Sayuran', 'Buah', 'Rempah'];
 const SORTS = [
   { key: 'popular',    label: 'Terpopuler' },
-  { key: 'rating',     label: 'Rating ⭐'  },
-  { key: 'price_asc',  label: 'Harga ↑'   },
-  { key: 'price_desc', label: 'Harga ↓'   },
+  { key: 'rating',     label: 'Rating'     },
+  { key: 'price_asc',  label: 'Harga Asc'  },
+  { key: 'price_desc', label: 'Harga Desc' },
 ];
 
 type CartEntry = { productId: string; variantId: string; qty: number };
@@ -64,7 +63,7 @@ export default function ProductsScreen() {
       );
     }
     if (activeCategory !== 'Semua') list = list.filter(p => p.category === activeCategory);
-    if (activeSort === 'popular')    list.sort((a, b) => b.sold - a.sold);
+    if (activeSort === 'popular')    list.sort((a, b) => b.sold   - a.sold);
     if (activeSort === 'rating')     list.sort((a, b) => b.rating - a.rating);
     if (activeSort === 'price_asc')  list.sort((a, b) => a.variants[0].price - b.variants[0].price);
     if (activeSort === 'price_desc') list.sort((a, b) => b.variants[0].price - a.variants[0].price);
@@ -77,7 +76,7 @@ export default function ProductsScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top']}>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <View style={[styles.header, { borderBottomColor: t.border }]}>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -101,10 +100,8 @@ export default function ProductsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* ── Filter area: category + sort, keduanya wrap ── */}
+      {/* Filter area */}
       <View style={[styles.filterArea, { borderBottomColor: t.border }]}>
-
-        {/* Kategori — hanya tampil saat bukan dari query pencarian */}
         {!initQuery && (
           <>
             <Text style={[styles.filterLabel, { color: t.textSub }]}>Kategori</Text>
@@ -115,13 +112,10 @@ export default function ProductsScreen() {
                   <TouchableOpacity
                     key={c}
                     onPress={() => setActiveCategory(c)}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: active ? t.primary    : t.surface,
-                        borderColor:     active ? t.primary    : t.border,
-                      },
-                    ]}
+                    style={[styles.chip, {
+                      backgroundColor: active ? t.primary : t.surface,
+                      borderColor:     active ? t.primary : t.border,
+                    }]}
                   >
                     <Text style={[styles.chipText, { color: active ? '#fff' : t.text }]}>{c}</Text>
                   </TouchableOpacity>
@@ -131,7 +125,6 @@ export default function ProductsScreen() {
           </>
         )}
 
-        {/* Urutkan */}
         <Text style={[styles.filterLabel, { color: t.textSub, marginTop: initQuery ? 0 : 10 }]}>Urutkan</Text>
         <View style={styles.chipWrap}>
           {SORTS.map(s => {
@@ -140,14 +133,24 @@ export default function ProductsScreen() {
               <TouchableOpacity
                 key={s.key}
                 onPress={() => setActiveSort(s.key)}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: active ? t.primaryMuted : t.surface,
-                    borderColor:     active ? t.primary      : t.border,
-                  },
-                ]}
+                style={[styles.chip, {
+                  backgroundColor: active ? t.primaryMuted : t.surface,
+                  borderColor:     active ? t.primary      : t.border,
+                }]}
               >
+                {/* Ikon sort sebagai Ionicons, bukan simbol karakter */}
+                {s.key === 'price_asc' && (
+                  <Ionicons name="arrow-up-outline" size={12} color={active ? t.primary : t.textSub} />
+                )}
+                {s.key === 'price_desc' && (
+                  <Ionicons name="arrow-down-outline" size={12} color={active ? t.primary : t.textSub} />
+                )}
+                {s.key === 'rating' && (
+                  <Ionicons name="star-outline" size={12} color={active ? t.primary : t.textSub} />
+                )}
+                {s.key === 'popular' && (
+                  <Ionicons name="flame-outline" size={12} color={active ? t.primary : t.textSub} />
+                )}
                 <Text style={[styles.chipText, { color: active ? t.primary : t.textSub }]}>{s.label}</Text>
               </TouchableOpacity>
             );
@@ -155,7 +158,7 @@ export default function ProductsScreen() {
         </View>
       </View>
 
-      {/* ── Product grid ── */}
+      {/* Product grid */}
       {filtered.length === 0 ? (
         <View style={styles.emptyWrap}>
           <Ionicons name="search-outline" size={52} color={t.border} />
@@ -225,22 +228,16 @@ export default function ProductsScreen() {
 
 const styles = StyleSheet.create({
   safe:          { flex: 1 },
-
-  // header
   header:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, borderBottomWidth: 1 },
   backBtn:       { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   pageTitle:     { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
   subtitle:      { fontSize: 12, marginTop: 2 },
   searchIconBtn: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-
-  // filter area — flexWrap agar chip tidak terpotong
   filterArea:    { paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
   filterLabel:   { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
   chipWrap:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip:          { borderWidth: 1.5, borderRadius: 24, paddingHorizontal: 14, paddingVertical: 7 },
+  chip:          { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1.5, borderRadius: 24, paddingHorizontal: 14, paddingVertical: 7 },
   chipText:      { fontSize: 13, fontWeight: '600' },
-
-  // grid
   row:           { gap: 12, marginBottom: 12 },
   card:          { width: (width - 52) / 2, borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
   cardImg:       { height: 100, alignItems: 'center', justifyContent: 'center' },
@@ -255,8 +252,6 @@ const styles = StyleSheet.create({
   cardPrice:     { fontSize: 14, fontWeight: '800' },
   cardUnit:      { fontSize: 11 },
   addBtn:        { width: 36, height: 36, borderRadius: 10, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-
-  // empty
   emptyWrap:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingTop: 80 },
   emptyTitle:    { fontSize: 16, fontWeight: '700' },
   emptySub:      { fontSize: 13 },
