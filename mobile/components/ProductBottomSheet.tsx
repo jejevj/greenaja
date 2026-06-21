@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity,
-  Animated, Dimensions, ScrollView, useColorScheme, Pressable,
+  Animated, Dimensions, ScrollView, useColorScheme,
+  Pressable, TextInput, Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -32,15 +33,20 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const slideAnim = useRef(new Animated.Value(SHEET_H)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const qtyInputRef = useRef<TextInput>(null);
 
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
+  // raw string saat user sedang mengetik di input
+  const [qtyRaw, setQtyRaw] = useState('1');
+  const [qtyFocused, setQtyFocused] = useState(false);
 
   // reset state setiap produk berganti
   useEffect(() => {
     if (product) {
       setSelectedVariant(product.variants[0]?.id ?? null);
       setQty(1);
+      setQtyRaw('1');
     }
   }, [product?.id]);
 
@@ -52,6 +58,7 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
         Animated.timing(fadeAnim,  { toValue: 1, duration: 200, useNativeDriver: true }),
       ]).start();
     } else {
+      Keyboard.dismiss();
       Animated.parallel([
         Animated.timing(slideAnim, { toValue: SHEET_H, duration: 240, useNativeDriver: true }),
         Animated.timing(fadeAnim,  { toValue: 0,       duration: 200, useNativeDriver: true }),
@@ -62,20 +69,52 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
   if (!product) return null;
 
   const variant = product.variants.find(v => v.id === selectedVariant);
+  const maxStock = variant?.stock ?? 99;
   const totalPrice = variant ? variant.price * qty : 0;
   const fmt = (n: number) => 'Rp ' + n.toLocaleString('id-ID');
 
+  // stepper buttons
+  const stepQty = (delta: number) => {
+    const next = Math.min(maxStock, Math.max(1, qty + delta));
+    setQty(next);
+    setQtyRaw(String(next));
+  };
+
+  // saat user mengetik di input
+  const handleQtyChange = (val: string) => {
+    // izinkan hanya angka
+    const cleaned = val.replace(/[^0-9]/g, '');
+    setQtyRaw(cleaned);
+    const parsed = parseInt(cleaned, 10);
+    if (!isNaN(parsed) && parsed >= 1) {
+      setQty(Math.min(maxStock, parsed));
+    }
+  };
+
+  // saat input kehilangan fokus — normalisasi nilai
+  const handleQtyBlur = () => {
+    setQtyFocused(false);
+    const parsed = parseInt(qtyRaw, 10);
+    const safe = isNaN(parsed) || parsed < 1 ? 1 : Math.min(maxStock, parsed);
+    setQty(safe);
+    setQtyRaw(String(safe));
+  };
+
   const handleAdd = () => {
     if (!selectedVariant) return;
+    Keyboard.dismiss();
     onAddToCart(product.id, selectedVariant, qty);
     onClose();
   };
+
+  // error state untuk qty
+  const qtyError = !qtyFocused && (qty < 1 || qty > maxStock);
 
   return (
     <Modal transparent visible={visible} onRequestClose={onClose} statusBarTranslucent animationType="none">
       {/* Backdrop */}
       <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => { Keyboard.dismiss(); onClose(); }} />
       </Animated.View>
 
       {/* Sheet */}
@@ -93,6 +132,7 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 140 }}
+          keyboardShouldPersistTaps="handled"
         >
           {/* Product header */}
           <View style={styles.productHeader}>
@@ -113,7 +153,6 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
             <Text style={[styles.desc, { color: t.textSub }]}>{product.description}</Text>
           </View>
 
-          {/* Divider */}
           <View style={[styles.divider, { backgroundColor: t.border }]} />
 
           {/* Variant selector */}
@@ -127,7 +166,7 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
                   <TouchableOpacity
                     key={v.id}
                     disabled={outOfStock}
-                    onPress={() => { setSelectedVariant(v.id); setQty(1); }}
+                    onPress={() => { setSelectedVariant(v.id); setQty(1); setQtyRaw('1'); }}
                     style={[
                       styles.variantChip,
                       {
@@ -151,36 +190,90 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
             </View>
           </View>
 
-          {/* Divider */}
           <View style={[styles.divider, { backgroundColor: t.border }]} />
 
-          {/* Qty stepper */}
+          {/* Qty stepper + keyboard input */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: t.text }]}>Jumlah</Text>
-            <View style={styles.qtyRow}>
-              <TouchableOpacity
-                style={[styles.qtyBtn, { borderColor: t.border, backgroundColor: t.surface }]}
-                onPress={() => setQty(q => Math.max(1, q - 1))}
-              >
-                <Ionicons name="remove-outline" size={18} color={t.text} />
-              </TouchableOpacity>
-              <View style={[styles.qtyDisplay, { backgroundColor: t.accent }]}>
-                <Text style={[styles.qtyText, { color: t.text }]}>{qty}</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.qtyBtn, { borderColor: t.primary, backgroundColor: t.primary }]}
-                onPress={() => setQty(q => Math.min(variant?.stock ?? 99, q + 1))}
-              >
-                <Ionicons name="add-outline" size={18} color="#fff" />
-              </TouchableOpacity>
+            <View style={styles.qtyLabelRow}>
+              <Text style={[styles.sectionLabel, { color: t.text }]}>Jumlah</Text>
               {variant && (
-                <Text style={[styles.stockNote, { color: t.textSub }]}>Stok: {variant.stock} {variant.unit}</Text>
+                <Text style={[styles.stockNote, { color: t.textSub }]}>
+                  Stok tersedia: <Text style={{ color: t.primary, fontWeight: '700' }}>{variant.stock}</Text> {variant.unit}
+                </Text>
               )}
             </View>
+
+            <View style={styles.qtyRow}>
+              {/* Tombol − */}
+              <TouchableOpacity
+                style={[styles.qtyBtn, { borderColor: qty <= 1 ? t.border : t.primary, backgroundColor: t.surface }]}
+                onPress={() => stepQty(-1)}
+                disabled={qty <= 1}
+              >
+                <Ionicons name="remove-outline" size={18} color={qty <= 1 ? t.textSub : t.primary} />
+              </TouchableOpacity>
+
+              {/* Input qty — bisa ketik langsung */}
+              <TouchableOpacity
+                activeOpacity={1}
+                onPress={() => qtyInputRef.current?.focus()}
+                style={[
+                  styles.qtyInputBox,
+                  {
+                    borderColor: qtyFocused ? t.primary : t.border,
+                    backgroundColor: qtyFocused ? t.primaryMuted : t.accent,
+                  },
+                ]}
+              >
+                <TextInput
+                  ref={qtyInputRef}
+                  style={[styles.qtyInput, { color: t.text }]}
+                  value={qtyFocused ? qtyRaw : String(qty)}
+                  onChangeText={handleQtyChange}
+                  onFocus={() => { setQtyFocused(true); setQtyRaw(String(qty)); }}
+                  onBlur={handleQtyBlur}
+                  keyboardType="number-pad"
+                  selectTextOnFocus
+                  maxLength={4}
+                  returnKeyType="done"
+                  onSubmitEditing={handleQtyBlur}
+                />
+              </TouchableOpacity>
+
+              {/* Tombol + */}
+              <TouchableOpacity
+                style={[styles.qtyBtn, { borderColor: qty >= maxStock ? t.border : t.primary, backgroundColor: qty >= maxStock ? t.surface : t.primary }]}
+                onPress={() => stepQty(1)}
+                disabled={qty >= maxStock}
+              >
+                <Ionicons name="add-outline" size={18} color={qty >= maxStock ? t.textSub : '#fff'} />
+              </TouchableOpacity>
+
+              {/* Hint tap to type */}
+              {!qtyFocused && (
+                <TouchableOpacity
+                  onPress={() => qtyInputRef.current?.focus()}
+                  style={[styles.editHint, { backgroundColor: t.primaryMuted }]}
+                >
+                  <Ionicons name="pencil-outline" size={12} color={t.primary} />
+                  <Text style={[styles.editHintText, { color: t.primary }]}>Ketik</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Pesan error jika melebihi stok */}
+            {qtyError && (
+              <View style={styles.errorRow}>
+                <Ionicons name="alert-circle-outline" size={13} color={t.danger} />
+                <Text style={[styles.errorText, { color: t.danger }]}>
+                  Maksimal {maxStock} {variant?.unit}
+                </Text>
+              </View>
+            )}
           </View>
         </ScrollView>
 
-        {/* CTA bar pinned bottom */}
+        {/* CTA bar */}
         <View style={[styles.ctaBar, { backgroundColor: t.bg }]}>
           <View style={styles.ctaPriceRow}>
             <Text style={[styles.ctaPriceLabel, { color: t.textSub }]}>Total harga</Text>
@@ -203,39 +296,44 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
 }
 
 const styles = StyleSheet.create({
-  backdrop:         { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheet:            { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
-  handleWrap:       { alignItems: 'center', paddingTop: 12, paddingBottom: 4 },
-  handle:           { width: 36, height: 4, borderRadius: 2 },
-  productHeader:    { alignItems: 'center', paddingTop: 12, paddingBottom: 4 },
-  productIconBox:   { width: 100, height: 100, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  tagBox:           { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
-  tagText:          { fontSize: 11, fontWeight: '700' },
-  productMeta:      { paddingHorizontal: 20, paddingBottom: 16, alignItems: 'center' },
-  productName:      { fontSize: 22, fontWeight: '800', letterSpacing: -0.3, marginBottom: 6, textAlign: 'center' },
-  farmRow:          { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 10 },
-  farmText:         { fontSize: 13 },
-  desc:             { fontSize: 13, lineHeight: 20, textAlign: 'center' },
-  divider:          { height: 1, marginHorizontal: 20, marginVertical: 16 },
-  section:          { paddingHorizontal: 20, marginBottom: 4 },
-  sectionLabel:     { fontSize: 13, fontWeight: '700', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
-  variantList:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  variantChip:      { borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, minWidth: 90, alignItems: 'center', gap: 2, overflow: 'hidden' },
-  variantLabel:     { fontSize: 13, fontWeight: '700' },
-  variantPrice:     { fontSize: 13, fontWeight: '800' },
-  variantUnit:      { fontSize: 11 },
-  outOfStockOverlay:{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' },
-  outOfStockText:   { fontSize: 11, fontWeight: '700', color: '#888' },
-  qtyRow:           { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  qtyBtn:           { width: 42, height: 42, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  qtyDisplay:       { width: 52, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  qtyText:          { fontSize: 18, fontWeight: '800' },
-  stockNote:        { fontSize: 12, marginLeft: 4 },
-  ctaBar:           { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 },
-  ctaPriceRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  ctaPriceLabel:    { fontSize: 13 },
-  ctaPrice:         { fontSize: 20, fontWeight: '800' },
-  ctaBtnOuter:      { borderRadius: 16, overflow: 'hidden' },
-  ctaBtnInner:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16 },
-  ctaBtnText:       { fontSize: 16, fontWeight: '700', color: '#fff' },
+  backdrop:          { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  sheet:             { position: 'absolute', bottom: 0, left: 0, right: 0, borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
+  handleWrap:        { alignItems: 'center', paddingTop: 12, paddingBottom: 4 },
+  handle:            { width: 36, height: 4, borderRadius: 2 },
+  productHeader:     { alignItems: 'center', paddingTop: 12, paddingBottom: 4 },
+  productIconBox:    { width: 100, height: 100, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  tagBox:            { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
+  tagText:           { fontSize: 11, fontWeight: '700' },
+  productMeta:       { paddingHorizontal: 20, paddingBottom: 16, alignItems: 'center' },
+  productName:       { fontSize: 22, fontWeight: '800', letterSpacing: -0.3, marginBottom: 6, textAlign: 'center' },
+  farmRow:           { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 10 },
+  farmText:          { fontSize: 13 },
+  desc:              { fontSize: 13, lineHeight: 20, textAlign: 'center' },
+  divider:           { height: 1, marginHorizontal: 20, marginVertical: 16 },
+  section:           { paddingHorizontal: 20, marginBottom: 4 },
+  sectionLabel:      { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  variantList:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
+  variantChip:       { borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, minWidth: 90, alignItems: 'center', gap: 2, overflow: 'hidden' },
+  variantLabel:      { fontSize: 13, fontWeight: '700' },
+  variantPrice:      { fontSize: 13, fontWeight: '800' },
+  variantUnit:       { fontSize: 11 },
+  outOfStockOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' },
+  outOfStockText:    { fontSize: 11, fontWeight: '700', color: '#888' },
+  qtyLabelRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  stockNote:         { fontSize: 12 },
+  qtyRow:            { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  qtyBtn:            { width: 42, height: 42, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  qtyInputBox:       { width: 64, height: 42, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  qtyInput:          { fontSize: 18, fontWeight: '800', textAlign: 'center', width: '100%', paddingHorizontal: 4 },
+  editHint:          { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20 },
+  editHintText:      { fontSize: 11, fontWeight: '600' },
+  errorRow:          { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
+  errorText:         { fontSize: 12 },
+  ctaBar:            { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 },
+  ctaPriceRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  ctaPriceLabel:     { fontSize: 13 },
+  ctaPrice:          { fontSize: 20, fontWeight: '800' },
+  ctaBtnOuter:       { borderRadius: 16, overflow: 'hidden' },
+  ctaBtnInner:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16 },
+  ctaBtnText:        { fontSize: 16, fontWeight: '700', color: '#fff' },
 });
