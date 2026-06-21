@@ -14,8 +14,8 @@ import { useApp, Voucher } from '../../context/AppContext';
 type Tab = 'active' | 'used' | 'expired';
 
 const TYPE_META: Record<string, { icon: string; label: string; colors: [string, string] }> = {
-  percent: { icon: 'pricetag-outline', label: 'Diskon %', colors: ['#1A7A4A', '#2A9960'] },
-  flat:    { icon: 'cash-outline', label: 'Potongan Rp', colors: ['#0D6E8A', '#1A9DBF'] },
+  percent: { icon: 'pricetag-outline', label: 'Diskon %',    colors: ['#1A7A4A', '#2A9960'] },
+  flat:    { icon: 'cash-outline',     label: 'Potongan Rp', colors: ['#0D6E8A', '#1A9DBF'] },
   ongkir:  { icon: 'bicycle-outline', label: 'Gratis Ongkir', colors: ['#7A4A1A', '#BF7A2A'] },
 };
 
@@ -30,44 +30,47 @@ function formatMinPurchase(v: Voucher) {
   return `Min. belanja Rp ${v.minPurchase.toLocaleString('id-ID')}`;
 }
 
-function getVoucherTerms(voucher: Voucher) {
-  const common = [
-    'Voucher hanya dapat digunakan 1 kali untuk setiap akun.',
-    'Voucher tidak dapat diuangkan atau dipindah tangankan.',
-    'Voucher hanya berlaku untuk transaksi melalui aplikasi GreenAja.',
-    'Voucher tidak dapat digabungkan dengan promo lain dalam 1 transaksi.',
-    'Jika transaksi dibatalkan, voucher dianggap hangus kecuali sistem mengembalikan otomatis.',
-  ];
-
+function getVoucherTerms(voucher: Voucher): string[] {
   const typeSpecific: string[] = [];
   if (voucher.type === 'percent') {
-    typeSpecific.push(`Potongan sebesar ${voucher.value}% dari subtotal belanja setelah memenuhi minimum pembelian.`);
+    typeSpecific.push(`Potongan sebesar ${voucher.value}% dihitung dari subtotal belanja setelah memenuhi minimum pembelian.`);
     if (voucher.maxDiscount) {
-      typeSpecific.push(`Maksimum potongan untuk voucher ini adalah Rp ${voucher.maxDiscount.toLocaleString('id-ID')}.`);
+      typeSpecific.push(`Maksimum potongan yang diberikan adalah Rp ${voucher.maxDiscount.toLocaleString('id-ID')}, meskipun nilai ${voucher.value}% melebihi angka tersebut.`);
     }
   }
   if (voucher.type === 'flat') {
-    typeSpecific.push(`Potongan nominal tetap sebesar Rp ${voucher.value.toLocaleString('id-ID')} setelah minimum pembelian terpenuhi.`);
+    typeSpecific.push(`Potongan nominal tetap sebesar Rp ${voucher.value.toLocaleString('id-ID')} langsung dikurangi dari total pembayaran setelah syarat minimum pembelian terpenuhi.`);
   }
   if (voucher.type === 'ongkir') {
-    typeSpecific.push('Voucher hanya memotong biaya pengiriman dan tidak mengurangi harga produk.');
-    typeSpecific.push('Apabila ongkos kirim melebihi nilai promo, selisih ongkir tetap dibayar pengguna sesuai ketentuan pengiriman.');
+    typeSpecific.push('Voucher ini hanya menanggung biaya ongkos kirim dan tidak mengurangi harga produk.');
+    typeSpecific.push('Apabila ongkos kirim aktual melebihi nilai promo, selisihnya tetap ditanggung oleh pembeli sesuai tarif kurir yang dipilih.');
   }
 
   const statusSpecific: string[] = [];
+  if (voucher.status === 'active') {
+    statusSpecific.push(`Voucher aktif dan berlaku hingga ${voucher.expiry} pukul 23.59 WIB. Gunakan sebelum kedaluwarsa.`);
+  }
   if (voucher.status === 'used' && voucher.usedAt) {
-    statusSpecific.push(`Voucher ini sudah pernah digunakan pada ${voucher.usedAt} sehingga tidak bisa dipakai kembali.`);
+    statusSpecific.push(`Voucher ini sudah digunakan pada tanggal ${voucher.usedAt} dan tidak bisa dipakai kembali oleh akun yang sama.`);
   }
   if (voucher.status === 'expired') {
-    statusSpecific.push(`Voucher ini sudah melewati masa berlaku pada ${voucher.expiry} dan tidak dapat digunakan lagi.`);
+    statusSpecific.push(`Voucher ini telah melewati masa berlakunya pada ${voucher.expiry} dan tidak dapat digunakan untuk transaksi apapun.`);
   }
-  if (voucher.status === 'active') {
-    statusSpecific.push(`Voucher berlaku sampai ${voucher.expiry} pukul 23.59 WIB.`);
-  }
+
+  const common = [
+    'Setiap voucher hanya dapat digunakan 1 kali per akun pengguna.',
+    'Voucher tidak dapat digabungkan dengan diskon atau promo lain dalam 1 transaksi yang sama.',
+    'Voucher tidak dapat diuangkan, dipindahtangankan, atau ditukar dengan bentuk keuntungan lain.',
+    'Voucher hanya berlaku untuk pembelian melalui aplikasi GreenAja dan tidak berlaku untuk pembelian di luar platform.',
+    'Apabila transaksi dibatalkan setelah voucher digunakan, voucher dinyatakan hangus kecuali sistem GreenAja secara otomatis mengembalikannya.',
+    'GreenAja berhak membatalkan atau menonaktifkan voucher jika terdapat indikasi penyalahgunaan, penipuan, atau pelanggaran ketentuan layanan.',
+    'Dengan menggunakan voucher ini, pengguna dianggap telah membaca, memahami, dan menyetujui seluruh syarat & ketentuan yang berlaku.',
+  ];
 
   return [...typeSpecific, ...statusSpecific, ...common];
 }
 
+// ── Detail Modal ─────────────────────────────────────────────────────────────
 function VoucherDetailModal({
   voucher, onClose, t,
 }: { voucher: Voucher; onClose: () => void; t: typeof LIGHT }) {
@@ -92,8 +95,11 @@ function VoucherDetailModal({
     <Modal transparent animationType="slide" visible onRequestClose={onClose}>
       <Pressable style={styles.modalBackdrop} onPress={onClose}>
         <Pressable style={[styles.modalSheet, { backgroundColor: t.bg }]} onPress={() => {}}>
+
+          {/* Drag handle */}
           <View style={[styles.dragHandle, { backgroundColor: t.border }]} />
 
+          {/* Gradient header — FIXED height, tidak ikut di-scroll */}
           <LinearGradient
             colors={isActive ? meta.colors : ['#9CA3AF', '#6B7280']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -116,10 +122,13 @@ function VoucherDetailModal({
             <Text style={styles.modalTitle}>{voucher.title}</Text>
           </LinearGradient>
 
+          {/* Kode voucher — FIXED, tidak ikut di-scroll */}
           <View style={[styles.codeRow, { backgroundColor: t.surface, borderColor: isActive ? t.primary : t.border }]}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.codeLabel, { color: t.textSub }]}>Kode Voucher</Text>
-              <Text style={[styles.codeValue, { color: isActive ? t.primary : t.textSub, letterSpacing: 2 }]}>{voucher.code}</Text>
+              <Text style={[styles.codeValue, { color: isActive ? t.primary : t.textSub, letterSpacing: 2 }]}>
+                {voucher.code}
+              </Text>
             </View>
             {isActive && (
               <TouchableOpacity
@@ -132,22 +141,27 @@ function VoucherDetailModal({
             )}
           </View>
 
+          {/* Scrollable content — Deskripsi + Detail + S&K */}
           <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingBottom: 20 }}
-            showsVerticalScrollIndicator={false}
+            style={styles.modalScroll}
+            contentContainerStyle={styles.modalScrollContent}
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled
+            bounces={false}
           >
+            {/* Deskripsi */}
             <View style={[styles.detailCard, { backgroundColor: t.surface, borderColor: t.border }]}>
               <Text style={[styles.detailSectionTitle, { color: t.text }]}>Deskripsi</Text>
               <Text style={[styles.detailDesc, { color: t.textSub }]}>{voucher.description}</Text>
             </View>
 
+            {/* Detail Voucher */}
             <View style={[styles.detailCard, { backgroundColor: t.surface, borderColor: t.border }]}>
               <Text style={[styles.detailSectionTitle, { color: t.text }]}>Detail Voucher</Text>
               {[
-                { icon: 'cash-outline', label: 'Minimum Pembelian', val: formatMinPurchase(voucher) },
+                { icon: 'cash-outline',              label: 'Minimum Pembelian', val: formatMinPurchase(voucher) },
                 ...(voucher.maxDiscount ? [{ icon: 'trending-down-outline', label: 'Maks. Diskon', val: `Rp ${voucher.maxDiscount.toLocaleString('id-ID')}` }] : []),
-                { icon: 'calendar-outline', label: 'Berlaku Hingga', val: voucher.expiry },
+                { icon: 'calendar-outline',          label: 'Berlaku Hingga',   val: voucher.expiry },
                 ...(voucher.usedAt ? [{ icon: 'checkmark-circle-outline', label: 'Digunakan Pada', val: voucher.usedAt }] : []),
                 { icon: 'information-circle-outline', label: 'Status', val: voucher.status === 'active' ? 'Aktif' : voucher.status === 'used' ? 'Terpakai' : 'Kadaluarsa' },
               ].map((row, i) => (
@@ -161,32 +175,55 @@ function VoucherDetailModal({
               ))}
             </View>
 
-            <View style={[styles.detailCard, { backgroundColor: t.surface, borderColor: t.border }]}>
-              <Text style={[styles.detailSectionTitle, { color: t.text }]}>Syarat & Ketentuan</Text>
+            {/* Syarat & Ketentuan */}
+            <View style={[styles.detailCard, styles.snkCard, { backgroundColor: t.surface, borderColor: isActive ? t.primary : '#EF444430' }]}>
+              <View style={styles.snkTitleRow}>
+                <Ionicons
+                  name="document-text-outline"
+                  size={15}
+                  color={isActive ? t.primary : '#EF4444'}
+                />
+                <Text style={[styles.detailSectionTitle, { color: isActive ? t.primary : '#EF4444', marginBottom: 0 }]}>
+                  Syarat &amp; Ketentuan
+                </Text>
+              </View>
+
               {terms.map((s, i) => (
-                <View key={i} style={styles.snkRow}>
-                  <View style={[styles.snkDot, { backgroundColor: voucher.status === 'expired' ? '#EF4444' : t.primary }]} />
+                <View key={i} style={[styles.snkRow, i > 0 && { marginTop: 6 }]}>
+                  <View style={[styles.snkNumberBox, { backgroundColor: isActive ? t.primaryMuted : '#FEE2E2' }]}>
+                    <Text style={[styles.snkNumber, { color: isActive ? t.primary : '#EF4444' }]}>{i + 1}</Text>
+                  </View>
                   <Text style={[styles.snkText, { color: t.textSub }]}>{s}</Text>
                 </View>
               ))}
             </View>
+
+            {/* Extra bottom padding agar konten tidak tertutup tombol */}
+            <View style={{ height: 8 }} />
           </ScrollView>
 
-          {isActive && (
+          {/* Action buttons — FIXED di bawah */}
+          {isActive ? (
             <View style={[styles.modalActions, { borderTopColor: t.border, backgroundColor: t.bg }]}>
               <TouchableOpacity style={[styles.shareBtn, { borderColor: t.border }]} onPress={handleShare}>
                 <Ionicons name="share-outline" size={18} color={t.text} />
                 <Text style={[styles.shareBtnText, { color: t.text }]}>Bagikan</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.useVoucherBtn} onPress={() => { onClose(); router.push('/(tabs)/cart'); }}>
-                <LinearGradient colors={['#1A7A4A', '#2A9960']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.useVoucherGradient}>
+              <TouchableOpacity
+                style={styles.useVoucherBtn}
+                onPress={() => { onClose(); router.push('/(tabs)/cart'); }}
+              >
+                <LinearGradient
+                  colors={['#1A7A4A', '#2A9960']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={styles.useVoucherGradient}
+                >
                   <Ionicons name="bag-check-outline" size={18} color="#fff" />
                   <Text style={styles.useVoucherText}>Pakai Sekarang</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-          )}
-          {!isActive && (
+          ) : (
             <View style={[styles.modalActions, { borderTopColor: t.border, backgroundColor: t.bg }]}>
               <TouchableOpacity style={[styles.closeModalBtn, { borderColor: t.border }]} onPress={onClose}>
                 <Text style={[styles.closeModalText, { color: t.text }]}>Tutup</Text>
@@ -199,6 +236,7 @@ function VoucherDetailModal({
   );
 }
 
+// ── Voucher Card ─────────────────────────────────────────────────────────────
 function VoucherCard({ voucher, onPress, t }: { voucher: Voucher; onPress: () => void; t: typeof LIGHT }) {
   const meta = TYPE_META[voucher.type];
   const isActive = voucher.status === 'active';
@@ -209,7 +247,11 @@ function VoucherCard({ voucher, onPress, t }: { voucher: Voucher; onPress: () =>
       onPress={onPress}
       style={[styles.card, { backgroundColor: t.surface, borderColor: isActive ? t.primary : t.border, opacity: isActive ? 1 : 0.65 }]}
     >
-      <LinearGradient colors={isActive ? meta.colors : ['#9CA3AF', '#6B7280']} style={styles.cardStrip} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
+      <LinearGradient
+        colors={isActive ? meta.colors : ['#9CA3AF', '#6B7280']}
+        style={styles.cardStrip}
+        start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+      >
         <Ionicons name={meta.icon as any} size={20} color="rgba(255,255,255,0.9)" />
       </LinearGradient>
       <View style={[styles.holeTop, { backgroundColor: t.bg }]} />
@@ -245,6 +287,7 @@ function VoucherCard({ voucher, onPress, t }: { voucher: Voucher; onPress: () =>
   );
 }
 
+// ── Main Screen ───────────────────────────────────────────────────────────────
 export default function VouchersScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const { vouchers, activeVoucherCount } = useApp();
@@ -254,8 +297,8 @@ export default function VouchersScreen() {
   const filtered = vouchers.filter(v => v.status === activeTab);
 
   const TABS: { key: Tab; label: string; count: number }[] = [
-    { key: 'active', label: 'Aktif', count: vouchers.filter(v => v.status === 'active').length },
-    { key: 'used', label: 'Terpakai', count: vouchers.filter(v => v.status === 'used').length },
+    { key: 'active',  label: 'Aktif',      count: vouchers.filter(v => v.status === 'active').length },
+    { key: 'used',    label: 'Terpakai',   count: vouchers.filter(v => v.status === 'used').length },
     { key: 'expired', label: 'Kadaluarsa', count: vouchers.filter(v => v.status === 'expired').length },
   ];
 
@@ -282,7 +325,9 @@ export default function VouchersScreen() {
             style={[styles.tab, activeTab === tab.key && { borderBottomWidth: 2.5, borderBottomColor: t.primary }]}
             onPress={() => setActiveTab(tab.key)}
           >
-            <Text style={[styles.tabText, { color: activeTab === tab.key ? t.primary : t.textSub, fontWeight: activeTab === tab.key ? '700' : '500' }]}>{tab.label}</Text>
+            <Text style={[styles.tabText, { color: activeTab === tab.key ? t.primary : t.textSub, fontWeight: activeTab === tab.key ? '700' : '500' }]}>
+              {tab.label}
+            </Text>
             {tab.count > 0 && (
               <View style={[styles.tabBadge, { backgroundColor: activeTab === tab.key ? t.primary : t.border }]}>
                 <Text style={[styles.tabBadgeText, { color: activeTab === tab.key ? '#fff' : t.textSub }]}>{tab.count}</Text>
@@ -292,92 +337,113 @@ export default function VouchersScreen() {
         ))}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.listContent, filtered.length === 0 && styles.emptyListContent]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.listContent, filtered.length === 0 && styles.emptyListContent]}
+      >
         {filtered.length === 0 ? (
           <View style={styles.emptyWrap}>
             <View style={[styles.emptyIconBox, { backgroundColor: t.accent }]}>
               <Ionicons name="pricetag-outline" size={36} color={t.primary} />
             </View>
-            <Text style={[styles.emptyTitle, { color: t.text }]}>Tidak ada voucher {activeTab === 'active' ? 'aktif' : activeTab === 'used' ? 'terpakai' : 'kadaluarsa'}</Text>
-            <Text style={[styles.emptySub, { color: t.textSub }]}>{activeTab === 'active' ? 'Pantau terus promo GreenAja untuk voucher terbaru!' : 'Voucher yang sudah tidak aktif akan muncul di sini.'}</Text>
+            <Text style={[styles.emptyTitle, { color: t.text }]}>
+              Tidak ada voucher {activeTab === 'active' ? 'aktif' : activeTab === 'used' ? 'terpakai' : 'kadaluarsa'}
+            </Text>
+            <Text style={[styles.emptySub, { color: t.textSub }]}>
+              {activeTab === 'active' ? 'Pantau terus promo GreenAja untuk voucher terbaru!' : 'Voucher yang sudah tidak aktif akan muncul di sini.'}
+            </Text>
           </View>
         ) : (
           filtered.map(v => <VoucherCard key={v.id} voucher={v} t={t} onPress={() => setSelectedVoucher(v)} />)
         )}
       </ScrollView>
 
-      {selectedVoucher && <VoucherDetailModal voucher={selectedVoucher} onClose={() => setSelectedVoucher(null)} t={t} />}
+      {selectedVoucher && (
+        <VoucherDetailModal voucher={selectedVoucher} onClose={() => setSelectedVoucher(null)} t={t} />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, borderBottomWidth: 1 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  pageTitle: { fontSize: 18, fontWeight: '800' },
-  pageSub: { fontSize: 12, marginTop: 2 },
-  headerBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
-  headerBadgeText: { fontSize: 13, fontWeight: '800' },
-  tabRow: { flexDirection: 'row', borderBottomWidth: 1 },
-  tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13 },
-  tabText: { fontSize: 13 },
-  tabBadge: { minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  tabBadgeText: { fontSize: 10, fontWeight: '700' },
-  listContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, gap: 12 },
-  emptyListContent: { flexGrow: 1, justifyContent: 'center' },
-  emptyWrap: { alignItems: 'center', gap: 12, paddingVertical: 60, paddingHorizontal: 20 },
-  emptyIconBox: { width: 72, height: 72, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', textAlign: 'center' },
-  emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
-  card: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 16, overflow: 'hidden' },
-  cardStrip: { width: 52, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
-  holeTop: { position: 'absolute', left: 40, top: -10, width: 20, height: 20, borderRadius: 10 },
-  holeBottom: { position: 'absolute', left: 40, bottom: -10, width: 20, height: 20, borderRadius: 10 },
-  cardContent: { flex: 1, paddingVertical: 14, paddingLeft: 14, paddingRight: 4, gap: 3 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-  cardValue: { fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
-  statusChip: { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
-  statusText: { fontSize: 10, fontWeight: '700' },
-  cardTitle: { fontSize: 13, fontWeight: '600' },
-  cardMin: { fontSize: 11 },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
-  cardExpiryRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cardExpiry: { fontSize: 11 },
-  codeChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  codeChipText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%', overflow: 'hidden' },
-  dragHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 0 },
-  modalGradient: { margin: 16, borderRadius: 16, padding: 20, overflow: 'hidden', marginBottom: 0 },
-  modalDecoCircle: { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.08)', top: -40, right: -20 },
-  modalDecoCircle2: { position: 'absolute', width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.06)', bottom: -20, right: 50 },
-  modalGradTop: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  modalTypeChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  modalTypeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-  modalValue: { fontSize: 32, fontWeight: '900', color: '#fff', letterSpacing: -1, marginBottom: 4 },
-  modalTitle: { fontSize: 14, color: 'rgba(255,255,255,0.85)' },
-  codeRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 12, marginBottom: 4, borderWidth: 1.5, borderRadius: 12, padding: 14 },
-  codeLabel: { fontSize: 11, marginBottom: 2 },
-  codeValue: { fontSize: 16, fontWeight: '800' },
-  copyBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  copyBtnText: { fontSize: 13, fontWeight: '700' },
-  detailCard: { borderWidth: 1, borderRadius: 14, padding: 14, gap: 0 },
+  safe:               { flex: 1 },
+  header:             { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, borderBottomWidth: 1 },
+  backBtn:            { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  pageTitle:          { fontSize: 18, fontWeight: '800' },
+  pageSub:            { fontSize: 12, marginTop: 2 },
+  headerBadge:        { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
+  headerBadgeText:    { fontSize: 13, fontWeight: '800' },
+  tabRow:             { flexDirection: 'row', borderBottomWidth: 1 },
+  tab:                { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13 },
+  tabText:            { fontSize: 13 },
+  tabBadge:           { minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  tabBadgeText:       { fontSize: 10, fontWeight: '700' },
+  listContent:        { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40, gap: 12 },
+  emptyListContent:   { flexGrow: 1, justifyContent: 'center' },
+  emptyWrap:          { alignItems: 'center', gap: 12, paddingVertical: 60, paddingHorizontal: 20 },
+  emptyIconBox:       { width: 72, height: 72, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  emptyTitle:         { fontSize: 16, fontWeight: '700', textAlign: 'center' },
+  emptySub:           { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+  // card
+  card:               { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 16, overflow: 'hidden' },
+  cardStrip:          { width: 52, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
+  holeTop:            { position: 'absolute', left: 40, top: -10, width: 20, height: 20, borderRadius: 10 },
+  holeBottom:         { position: 'absolute', left: 40, bottom: -10, width: 20, height: 20, borderRadius: 10 },
+  cardContent:        { flex: 1, paddingVertical: 14, paddingLeft: 14, paddingRight: 4, gap: 3 },
+  cardTop:            { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  cardValue:          { fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
+  statusChip:         { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3 },
+  statusText:         { fontSize: 10, fontWeight: '700' },
+  cardTitle:          { fontSize: 13, fontWeight: '600' },
+  cardMin:            { fontSize: 11 },
+  cardFooter:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
+  cardExpiryRow:      { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  cardExpiry:         { fontSize: 11 },
+  codeChip:           { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  codeChipText:       { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  // modal
+  modalBackdrop:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+  // ↓ hapus overflow:'hidden' dan naikkan maxHeight supaya S&K tidak terpotong
+  modalSheet:         { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '95%', flexDirection: 'column' },
+  dragHandle:         { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 0 },
+  modalGradient:      { margin: 16, borderRadius: 16, padding: 20, overflow: 'hidden', marginBottom: 0 },
+  modalDecoCircle:    { position: 'absolute', width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.08)', top: -40, right: -20 },
+  modalDecoCircle2:   { position: 'absolute', width: 80,  height: 80,  borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.06)', bottom: -20, right: 50 },
+  modalGradTop:       { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  modalTypeChip:      { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  modalTypeText:      { fontSize: 11, fontWeight: '700', color: '#fff' },
+  modalValue:         { fontSize: 32, fontWeight: '900', color: '#fff', letterSpacing: -1, marginBottom: 4 },
+  modalTitle:         { fontSize: 14, color: 'rgba(255,255,255,0.85)' },
+  codeRow:            { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 12, marginBottom: 4, borderWidth: 1.5, borderRadius: 12, padding: 14 },
+  codeLabel:          { fontSize: 11, marginBottom: 2 },
+  codeValue:          { fontSize: 16, fontWeight: '800' },
+  copyBtn:            { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  copyBtnText:        { fontSize: 13, fontWeight: '700' },
+  // scrollable area
+  modalScroll:        { flex: 1 },
+  modalScrollContent: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 16, gap: 10 },
+  // detail cards
+  detailCard:         { borderWidth: 1, borderRadius: 14, padding: 14 },
   detailSectionTitle: { fontSize: 13, fontWeight: '700', marginBottom: 10 },
-  detailDesc: { fontSize: 13, lineHeight: 20 },
-  detailRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
-  detailIconBox: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  detailRowLabel: { flex: 1, fontSize: 13 },
-  detailRowVal: { fontSize: 13, fontWeight: '600' },
-  snkRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
-  snkDot: { width: 5, height: 5, borderRadius: 3, marginTop: 6 },
-  snkText: { flex: 1, fontSize: 12, lineHeight: 18 },
-  modalActions: { flexDirection: 'row', gap: 10, padding: 16, paddingBottom: 28, borderTopWidth: 1 },
-  shareBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 14, paddingVertical: 13 },
-  shareBtnText: { fontSize: 14, fontWeight: '600' },
-  useVoucherBtn: { flex: 2, borderRadius: 14, overflow: 'hidden' },
+  detailDesc:         { fontSize: 13, lineHeight: 20 },
+  detailRow:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
+  detailIconBox:      { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  detailRowLabel:     { flex: 1, fontSize: 13 },
+  detailRowVal:       { fontSize: 13, fontWeight: '600' },
+  // S&K card
+  snkCard:            { borderWidth: 1.5 },
+  snkTitleRow:        { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 14 },
+  snkRow:             { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  snkNumberBox:       { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  snkNumber:          { fontSize: 10, fontWeight: '800' },
+  snkText:            { flex: 1, fontSize: 12, lineHeight: 19 },
+  // action buttons
+  modalActions:       { flexDirection: 'row', gap: 10, padding: 16, paddingBottom: 28, borderTopWidth: 1 },
+  shareBtn:           { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 14, paddingVertical: 13 },
+  shareBtnText:       { fontSize: 14, fontWeight: '600' },
+  useVoucherBtn:      { flex: 2, borderRadius: 14, overflow: 'hidden' },
   useVoucherGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
-  useVoucherText: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  closeModalBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 14, paddingVertical: 13 },
-  closeModalText: { fontSize: 14, fontWeight: '600' },
+  useVoucherText:     { fontSize: 14, fontWeight: '700', color: '#fff' },
+  closeModalBtn:      { flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 14, paddingVertical: 13 },
+  closeModalText:     { fontSize: 14, fontWeight: '600' },
 });
