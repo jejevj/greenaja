@@ -13,10 +13,6 @@ export default function ProfileScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const { activeOrderCount, needReviewCount, hasAddress, addresses } = useApp();
 
-  // Badge config per menu item
-  // count  > 0 → hijau/primary (angka)
-  // alert  = true → merah (!) tanpa angka
-  // keduanya null → tidak ada badge
   type MenuBadge = { count?: number; alert?: boolean } | null;
 
   const MENU: { label: string; icon: any; sub: string; route?: string; badge: MenuBadge }[] = [
@@ -34,7 +30,7 @@ export default function ProfileScreen() {
         : null,
     },
     {
-      label: 'Alamat', icon: 'location-outline',
+      label: 'Alamat', icon: 'location-outline', route: '/(tabs)/address',
       sub: hasAddress ? `${addresses.length} alamat tersimpan` : 'Belum ada alamat, tambahkan sekarang',
       badge: !hasAddress ? { alert: true } : null,
     },
@@ -78,13 +74,10 @@ export default function ProfileScreen() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: t.text }]}>Profil</Text>
           </View>
-          {/* Badge summary di header jika ada notif */}
           {totalBadge > 0 && (
             <View style={[styles.headerBadgeWrap, { backgroundColor: t.primaryMuted, borderColor: t.primary }]}>
               <Ionicons name="notifications-outline" size={13} color={t.primary} />
-              <Text style={[styles.headerBadgeText, { color: t.primary }]}>
-                {totalBadge} notifikasi
-              </Text>
+              <Text style={[styles.headerBadgeText, { color: t.primary }]}>{totalBadge} notifikasi</Text>
             </View>
           )}
         </View>
@@ -144,8 +137,10 @@ export default function ProfileScreen() {
                 activeOpacity={0.7}
                 onPress={() => item.route ? router.push(item.route as any) : undefined}
               >
-                <View style={[styles.menuIconBox, { backgroundColor: t.accent }]}>
-                  <Ionicons name={item.icon} size={18} color={t.primary} />
+                <View style={[styles.menuIconBox, {
+                  backgroundColor: hasAlert ? '#FEE2E2' : t.accent,
+                }]}>
+                  <Ionicons name={item.icon} size={18} color={hasAlert ? '#EF4444' : t.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.menuLabel, { color: t.text }]}>{item.label}</Text>
@@ -154,23 +149,16 @@ export default function ProfileScreen() {
                     fontWeight: (hasAlert || hasCount) ? '600' : '400',
                   }]}>{item.sub}</Text>
                 </View>
-
-                {/* Badge angka (hijau/primary) */}
                 {hasCount && (
                   <View style={[styles.menuBadge, { backgroundColor: t.primary }]}>
-                    <Text style={styles.menuBadgeText}>
-                      {(item.badge!.count! > 9) ? '9+' : item.badge!.count}
-                    </Text>
+                    <Text style={styles.menuBadgeText}>{item.badge!.count! > 9 ? '9+' : item.badge!.count}</Text>
                   </View>
                 )}
-
-                {/* Badge alert merah */}
                 {hasAlert && !hasCount && (
                   <View style={[styles.menuBadge, { backgroundColor: '#EF4444' }]}>
                     <Text style={styles.menuBadgeText}>!</Text>
                   </View>
                 )}
-
                 <Ionicons
                   name="chevron-forward-outline"
                   size={18}
