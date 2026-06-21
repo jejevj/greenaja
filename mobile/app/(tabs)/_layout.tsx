@@ -17,6 +17,8 @@ export default function MainLayout() {
         <Stack.Screen name="orders" />
         <Stack.Screen name="order-detail" />
         <Stack.Screen name="order-review" />
+        <Stack.Screen name="products" />
+        <Stack.Screen name="search" />
       </Stack>
     </>
   );
