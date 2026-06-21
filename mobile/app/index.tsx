@@ -1,31 +1,47 @@
 import { useEffect } from 'react';
 import { router } from 'expo-router';
-import { StyleSheet, View, Text, useColorScheme } from 'react-native';
-import { LIGHT, DARK } from '../constants/Theme';
+import { StyleSheet, View, Text } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function SplashEntry() {
-  const t = useColorScheme() === 'dark' ? DARK : LIGHT;
-
   useEffect(() => {
-    const timer = setTimeout(() => router.replace('/(auth)/login'), 2200);
+    const timer = setTimeout(() => {
+      router.replace('/(auth)/login');
+    }, 2500);
     return () => clearTimeout(timer);
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: t.bg }]}>
-      <View style={[styles.logoBox, { backgroundColor: t.primaryMuted, borderColor: t.border }]}>
-        <Text style={[styles.logoText, { color: t.primary }]}>G</Text>
+    <LinearGradient
+      colors={['#1a7a4a', '#0d4a2c']}
+      style={styles.container}
+    >
+      <View style={styles.center}>
+        <View style={styles.iconBox}>
+          <Text style={styles.icon}>🌿</Text>
+        </View>
+        <Text style={styles.appName}>GreenAja</Text>
+        <Text style={styles.tagline}>Hidup Lebih Hijau, Mulai Hari Ini</Text>
       </View>
-      <Text style={[styles.appName, { color: t.text }]}>GreenAja</Text>
-      <Text style={[styles.tagline, { color: t.textSub }]}>Pasar Sayur Lokal Terpercaya</Text>
-    </View>
+      <Text style={styles.version}>v1.0.0</Text>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container:  { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  logoBox:    { width: 80, height: 80, borderRadius: 24, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  logoText:   { fontSize: 40, fontWeight: '800' },
-  appName:    { fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
-  tagline:    { fontSize: 14 },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  center: { alignItems: 'center' },
+  iconBox: {
+    width: 96,
+    height: 96,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  icon: { fontSize: 48 },
+  appName: { fontSize: 36, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
+  tagline: { fontSize: 14, color: 'rgba(255,255,255,0.65)', marginTop: 8 },
+  version: { position: 'absolute', bottom: 40, fontSize: 12, color: 'rgba(255,255,255,0.3)' },
 });

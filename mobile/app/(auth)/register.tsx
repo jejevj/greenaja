@@ -1,79 +1,131 @@
 import React, { useState } from 'react';
 import {
-  StyleSheet, KeyboardAvoidingView, Platform,
-  ScrollView, TouchableOpacity, View, Text,
-  TextInput, Pressable, ActivityIndicator, useColorScheme,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableOpacity,
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { LIGHT, DARK } from '../../constants/Theme';
 
 export default function RegisterScreen() {
-  const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [focus, setFocus] = useState<string | null>(null);
 
-  const border = (f: string) => focus === f ? t.primary : t.border;
+  const handleRegister = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      router.replace('/(auth)/login');
+    }, 1000);
+  };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: t.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={[styles.content, { backgroundColor: t.bg }]} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Top */}
+        <LinearGradient colors={['#1a7a4a', '#2d9966']} style={styles.topBar}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Text style={styles.backText}>← Kembali</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Buat Akun Baru</Text>
+          <Text style={styles.headerSub}>Bergabung bersama komunitas GreenAja</Text>
+        </LinearGradient>
 
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back-outline" size={20} color={t.text} />
-          <Text style={[styles.backText, { color: t.text }]}>Kembali</Text>
-        </TouchableOpacity>
+        {/* Card */}
+        <View style={styles.card}>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Nama Lengkap</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Nama kamu"
+              placeholderTextColor="#bbb"
+              value={name}
+              onChangeText={setName}
+            />
+          </View>
 
-        <Text style={[styles.title, { color: t.text }]}>Buat Akun</Text>
-        <Text style={[styles.subtitle, { color: t.textSub }]}>Bergabung dengan komunitas sayur lokal</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="contoh@email.com"
+              placeholderTextColor="#bbb"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
 
-        <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
-          {([
-            { key: 'name',     label: 'Nama Lengkap', icon: 'person-outline',       placeholder: 'Nama kamu',         secure: false, kb: 'default' },
-            { key: 'email',    label: 'Email',        icon: 'mail-outline',          placeholder: 'nama@email.com',    secure: false, kb: 'email-address' },
-            { key: 'password', label: 'Password',     icon: 'lock-closed-outline',  placeholder: 'Min. 8 karakter',   secure: true,  kb: 'default' },
-            { key: 'confirm',  label: 'Konfirmasi',   icon: 'shield-checkmark-outline', placeholder: 'Ulangi password', secure: true, kb: 'default' },
-          ] as any[]).map(f => (
-            <View key={f.key} style={styles.field}>
-              <Text style={[styles.label, { color: t.textSub }]}>{f.label}</Text>
-              <View style={[styles.inputRow, { borderColor: border(f.key), backgroundColor: t.bg }]}>
-                <Ionicons name={f.icon} size={18} color={t.textSub} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: t.text, flex: 1 }]}
-                  placeholder={f.placeholder}
-                  placeholderTextColor={t.textSub}
-                  secureTextEntry={f.secure && !showPw}
-                  keyboardType={f.kb}
-                  autoCapitalize="none"
-                  onFocus={() => setFocus(f.key)}
-                  onBlur={() => setFocus(null)}
-                />
-                {f.key === 'password' && (
-                  <TouchableOpacity onPress={() => setShowPw(!showPw)} style={styles.eyeBtn}>
-                    <Ionicons name={showPw ? 'eye-outline' : 'eye-off-outline'} size={18} color={t.textSub} />
-                  </TouchableOpacity>
-                )}
-              </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.pwWrapper}>
+              <TextInput
+                style={[styles.input, { flex: 1, borderWidth: 0, paddingRight: 0 }]}
+                placeholder="Min. 8 karakter"
+                placeholderTextColor="#bbb"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPw}
+              />
+              <TouchableOpacity onPress={() => setShowPw(!showPw)} style={styles.eyeBtn}>
+                <Text style={styles.eyeIcon}>{showPw ? '🙈' : '👁️'}</Text>
+              </TouchableOpacity>
             </View>
-          ))}
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Konfirmasi Password</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ulangi password"
+              placeholderTextColor="#bbb"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+            />
+          </View>
 
           <Pressable
-            onPress={() => { setLoading(true); setTimeout(() => { setLoading(false); router.replace('/(auth)/login'); }, 900); }}
+            onPress={handleRegister}
             disabled={loading}
-            style={({ pressed }) => [styles.btn, { backgroundColor: t.primary, opacity: pressed ? 0.85 : 1, marginTop: 8 }]}
+            style={({ pressed }) => [styles.btnOuter, pressed && { opacity: 0.85 }]}
           >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Daftar Sekarang</Text>}
+            <LinearGradient
+              colors={['#1a7a4a', '#2d9966']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.btnInner}
+            >
+              {loading
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.btnText}>Daftar</Text>
+              }
+            </LinearGradient>
           </Pressable>
 
           <View style={styles.footer}>
-            <Text style={[styles.footerText, { color: t.textSub }]}>Sudah punya akun? </Text>
+            <Text style={styles.footerText}>Sudah punya akun? </Text>
             <TouchableOpacity onPress={() => router.replace('/(auth)/login')}>
-              <Text style={[styles.footerLink, { color: t.primary }]}>Masuk</Text>
+              <Text style={styles.loginLink}>Masuk</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -83,21 +135,49 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  content:    { flexGrow: 1, padding: 24, paddingTop: 56 },
-  backBtn:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 28 },
-  backText:   { fontSize: 15, fontWeight: '500' },
-  title:      { fontSize: 26, fontWeight: '800', letterSpacing: -0.5, marginBottom: 6 },
-  subtitle:   { fontSize: 14, marginBottom: 28 },
-  card:       { borderRadius: 20, borderWidth: 1, padding: 24 },
-  field:      { marginBottom: 16 },
-  label:      { fontSize: 12, fontWeight: '600', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  inputRow:   { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
-  inputIcon:  { marginRight: 10 },
-  input:      { fontSize: 15 },
-  eyeBtn:     { paddingLeft: 8 },
-  btn:        { height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  btnText:    { fontSize: 16, fontWeight: '700', color: '#fff' },
-  footer:     { flexDirection: 'row', justifyContent: 'center' },
-  footerText: { fontSize: 14 },
-  footerLink: { fontSize: 14, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: '#f4f9f6' },
+  content: { flexGrow: 1 },
+  topBar: { paddingTop: 56, paddingBottom: 48, paddingHorizontal: 28 },
+  backBtn: { marginBottom: 16 },
+  backText: { fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
+  headerTitle: { fontSize: 26, fontWeight: '700', color: '#fff', marginBottom: 6 },
+  headerSub: { fontSize: 14, color: 'rgba(255,255,255,0.7)' },
+  card: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    flex: 1,
+    padding: 28,
+    paddingTop: 32,
+  },
+  fieldGroup: { marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 8 },
+  input: {
+    backgroundColor: '#f7f7f7',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#1a1a1a',
+    borderWidth: 1.5,
+    borderColor: '#ebebeb',
+  },
+  pwWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f7f7f7',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#ebebeb',
+    paddingHorizontal: 16,
+  },
+  eyeBtn: { paddingLeft: 8, paddingVertical: 14 },
+  eyeIcon: { fontSize: 16 },
+  btnOuter: { borderRadius: 14, overflow: 'hidden', marginTop: 8, marginBottom: 24 },
+  btnInner: { paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
+  btnText: { fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.3 },
+  footer: { flexDirection: 'row', justifyContent: 'center' },
+  footerText: { fontSize: 14, color: '#888' },
+  loginLink: { fontSize: 14, color: '#1a7a4a', fontWeight: '700' },
 });
