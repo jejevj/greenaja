@@ -9,25 +9,71 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LIGHT, DARK } from '../../constants/Theme';
+import ProductBottomSheet, { ProductSheetItem } from '../../components/ProductBottomSheet';
 
 const { width } = Dimensions.get('window');
 
 const CATEGORIES = [
-  { id: '1', label: 'Semua',   icon: 'apps-outline' },
-  { id: '2', label: 'Sayuran', icon: 'leaf-outline' },
-  { id: '3', label: 'Buah',    icon: 'nutrition-outline' },
-  { id: '4', label: 'Rempah',  icon: 'flask-outline' },
-  { id: '5', label: 'Organik', icon: 'shield-checkmark-outline' },
-  { id: '6', label: 'Lokal',   icon: 'home-outline' },
+  { id: '1', label: 'Semua',   icon: 'apps-outline'              },
+  { id: '2', label: 'Sayuran', icon: 'leaf-outline'              },
+  { id: '3', label: 'Buah',    icon: 'nutrition-outline'         },
+  { id: '4', label: 'Rempah',  icon: 'flask-outline'             },
+  { id: '5', label: 'Organik', icon: 'shield-checkmark-outline'  },
+  { id: '6', label: 'Lokal',   icon: 'home-outline'              },
 ] as const;
 
-const PRODUCTS = [
-  { id: '1', name: 'Bayam Segar',    price: 'Rp 4.500',  unit: '/ikat',  tag: 'Bestseller', farm: 'Kebun Pak Budi' },
-  { id: '2', name: 'Tomat Organik',  price: 'Rp 12.000', unit: '/kg',    tag: 'Organik',    farm: 'Farm Cisarua'   },
-  { id: '3', name: 'Cabai Rawit',    price: 'Rp 28.000', unit: '/kg',    tag: 'Populer',    farm: 'Kebun Bu Sari'  },
-  { id: '4', name: 'Kangkung',       price: 'Rp 3.500',  unit: '/ikat',  tag: 'Segar',      farm: 'Kebun Pak Budi' },
-  { id: '5', name: 'Wortel Baby',    price: 'Rp 9.000',  unit: '/250g',  tag: 'Baru',       farm: 'Farm Lembang'   },
-  { id: '6', name: 'Brokoli Hijau',  price: 'Rp 15.000', unit: '/buah',  tag: 'Organik',    farm: 'Farm Cisarua'   },
+const PRODUCTS: ProductSheetItem[] = [
+  {
+    id: '1', name: 'Bayam Segar', farm: 'Kebun Pak Budi', tag: 'Bestseller',
+    description: 'Bayam lokal segar dipanen pagi hari langsung dari kebun organik Bogor.',
+    variants: [
+      { id: 'v1', label: '1 Ikat',   price: 4500,  unit: 'ikat', stock: 30 },
+      { id: 'v2', label: '3 Ikat',   price: 12000, unit: 'ikat', stock: 15 },
+      { id: 'v3', label: '5 Ikat',   price: 18000, unit: 'ikat', stock: 8  },
+    ],
+  },
+  {
+    id: '2', name: 'Tomat Organik', farm: 'Farm Cisarua', tag: 'Organik',
+    description: 'Tomat cherry organik bersertifikat, tanpa pestisida, rasa manis alami.',
+    variants: [
+      { id: 'v1', label: '250g',  price: 7500,  unit: 'gram', stock: 20 },
+      { id: 'v2', label: '500g',  price: 12000, unit: 'gram', stock: 12 },
+      { id: 'v3', label: '1kg',   price: 22000, unit: 'kg',   stock: 0  },
+    ],
+  },
+  {
+    id: '3', name: 'Cabai Rawit', farm: 'Kebun Bu Sari', tag: 'Populer',
+    description: 'Cabai rawit merah segar, tingkat kepedasan tinggi, cocok untuk masakan rumah.',
+    variants: [
+      { id: 'v1', label: '100g', price: 6000,  unit: 'gram', stock: 25 },
+      { id: 'v2', label: '250g', price: 14000, unit: 'gram', stock: 10 },
+      { id: 'v3', label: '500g', price: 26000, unit: 'gram', stock: 5  },
+    ],
+  },
+  {
+    id: '4', name: 'Kangkung', farm: 'Kebun Pak Budi', tag: 'Segar',
+    description: 'Kangkung air segar, batang renyah, cocok untuk tumis dan lalapan.',
+    variants: [
+      { id: 'v1', label: '1 Ikat', price: 3500,  unit: 'ikat', stock: 40 },
+      { id: 'v2', label: '3 Ikat', price: 9500,  unit: 'ikat', stock: 20 },
+    ],
+  },
+  {
+    id: '5', name: 'Wortel Baby', farm: 'Farm Lembang', tag: 'Baru',
+    description: 'Wortel baby Lembang, manis dan renyah, cocok untuk camilan sehat anak.',
+    variants: [
+      { id: 'v1', label: '250g', price: 9000,  unit: 'gram', stock: 15 },
+      { id: 'v2', label: '500g', price: 16500, unit: 'gram', stock: 8  },
+    ],
+  },
+  {
+    id: '6', name: 'Brokoli Hijau', farm: 'Farm Cisarua', tag: 'Organik',
+    description: 'Brokoli segar organik ukuran besar, kaya vitamin C dan serat.',
+    variants: [
+      { id: 'v1', label: 'Kecil (~300g)',  price: 8000,  unit: 'buah', stock: 12 },
+      { id: 'v2', label: 'Besar (~600g)',  price: 15000, unit: 'buah', stock: 6  },
+    ],
+  },
 ];
 
 const PROMOS = [
@@ -36,21 +82,37 @@ const PROMOS = [
   { id: '3', title: 'Paket Mingguan',         sub: 'Hemat hingga 30%' },
 ];
 
+type CartEntry = { productId: string; variantId: string; qty: number };
+
 export default function HomeScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const [activeCategory, setActiveCategory] = useState('1');
   const [search, setSearch] = useState('');
-  const [cart, setCart] = useState<string[]>([]);
   const [focusSearch, setFocusSearch] = useState(false);
+  const [cart, setCart] = useState<CartEntry[]>([]);
+  const [sheetProduct, setSheetProduct] = useState<ProductSheetItem | null>(null);
 
-  const toggleCart = (id: string) =>
-    setCart(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const cartCount = cart.reduce((s, e) => s + e.qty, 0);
+
+  const handleAddToCart = (productId: string, variantId: string, qty: number) => {
+    setCart(prev => {
+      const idx = prev.findIndex(e => e.productId === productId && e.variantId === variantId);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], qty: next[idx].qty + qty };
+        return next;
+      }
+      return [...prev, { productId, variantId, qty }];
+    });
+  };
+
+  const inCart = (id: string) => cart.some(e => e.productId === id);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
-        {/* ── TOP BAR ── */}
+        {/* TOP BAR */}
         <View style={styles.topBar}>
           <View>
             <Text style={[styles.greeting, { color: t.textSub }]}>Selamat datang</Text>
@@ -62,9 +124,9 @@ export default function HomeScreen() {
               onPress={() => router.push('/(tabs)/cart')}
             >
               <Ionicons name="bag-outline" size={20} color={t.text} />
-              {cart.length > 0 && (
+              {cartCount > 0 && (
                 <View style={[styles.badge, { backgroundColor: t.primary }]}>
-                  <Text style={styles.badgeText}>{cart.length}</Text>
+                  <Text style={styles.badgeText}>{cartCount}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -77,7 +139,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ── SEARCH ── */}
+        {/* SEARCH */}
         <View style={[styles.searchBar, { backgroundColor: t.surface, borderColor: focusSearch ? t.primary : t.border }]}>
           <Ionicons name="search-outline" size={18} color={t.textSub} />
           <TextInput
@@ -96,7 +158,7 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* ── PROMO BANNER ── */}
+        {/* PROMO BANNERS */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.promoList}>
           {PROMOS.map(p => (
             <TouchableOpacity key={p.id} activeOpacity={0.82}>
@@ -105,7 +167,7 @@ export default function HomeScreen() {
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={styles.promoBanner}
               >
-                <Ionicons name="pricetag-outline" size={18} color="rgba(255,255,255,0.7)" style={{ marginBottom: 8 }} />
+                <Ionicons name="pricetag-outline" size={16} color="rgba(255,255,255,0.65)" style={{ marginBottom: 8 }} />
                 <Text style={styles.promoTitle}>{p.title}</Text>
                 <Text style={styles.promoSub}>{p.sub}</Text>
               </LinearGradient>
@@ -113,7 +175,7 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        {/* ── CATEGORIES ── */}
+        {/* CATEGORIES */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catList}>
           {CATEGORIES.map(c => {
             const active = activeCategory === c.id;
@@ -121,10 +183,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 key={c.id}
                 onPress={() => setActiveCategory(c.id)}
-                style={[
-                  styles.chip,
-                  { backgroundColor: active ? t.primary : t.surface, borderColor: active ? t.primary : t.border },
-                ]}
+                style={[styles.chip, { backgroundColor: active ? t.primary : t.surface, borderColor: active ? t.primary : t.border }]}
               >
                 <Ionicons name={c.icon as any} size={14} color={active ? '#fff' : t.textSub} />
                 <Text style={[styles.chipText, { color: active ? '#fff' : t.text }]}>{c.label}</Text>
@@ -133,7 +192,7 @@ export default function HomeScreen() {
           })}
         </ScrollView>
 
-        {/* ── PRODUCTS ── */}
+        {/* PRODUCTS */}
         <View style={styles.sectionRow}>
           <Text style={[styles.sectionTitle, { color: t.text }]}>Produk Segar</Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/explore')} style={styles.seeAllBtn}>
@@ -144,9 +203,14 @@ export default function HomeScreen() {
 
         <View style={styles.grid}>
           {PRODUCTS.map(p => {
-            const inCart = cart.includes(p.id);
+            const added = inCart(p.id);
             return (
-              <View key={p.id} style={[styles.productCard, { backgroundColor: t.surface, borderColor: t.border }]}>
+              <TouchableOpacity
+                key={p.id}
+                style={[styles.productCard, { backgroundColor: t.surface, borderColor: t.border }]}
+                activeOpacity={0.88}
+                onPress={() => setSheetProduct(p)}
+              >
                 <View style={[styles.productImgBox, { backgroundColor: t.accent }]}>
                   <Ionicons name="leaf-outline" size={36} color={t.primary} />
                 </View>
@@ -158,30 +222,36 @@ export default function HomeScreen() {
                   <Text style={[styles.productFarm, { color: t.textSub }]} numberOfLines={1}>{p.farm}</Text>
                   <View style={styles.productFooter}>
                     <View>
-                      <Text style={[styles.productPrice, { color: t.primary }]}>{p.price}</Text>
-                      <Text style={[styles.productUnit, { color: t.textSub }]}>{p.unit}</Text>
+                      <Text style={[styles.productPrice, { color: t.primary }]}>
+                        {p.variants[0] ? 'Rp ' + p.variants[0].price.toLocaleString('id-ID') : '-'}
+                      </Text>
+                      <Text style={[styles.productUnit, { color: t.textSub }]}>
+                        /{p.variants[0]?.unit}
+                      </Text>
                     </View>
+                    {/* ADD BUTTON — opens bottom sheet */}
                     <TouchableOpacity
                       style={[
                         styles.addBtn,
-                        { backgroundColor: inCart ? t.primary : t.primaryMuted, borderColor: t.primary },
+                        { backgroundColor: added ? t.primary : t.primaryMuted, borderColor: t.primary },
                       ]}
-                      onPress={() => toggleCart(p.id)}
+                      onPress={() => setSheetProduct(p)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                       <Ionicons
-                        name={inCart ? 'checkmark-outline' : 'add-outline'}
+                        name={added ? 'checkmark-outline' : 'add-outline'}
                         size={18}
-                        color={inCart ? '#fff' : t.primary}
+                        color={added ? '#fff' : t.primary}
                       />
                     </TouchableOpacity>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* ── RECOMMENDATIONS ── */}
+        {/* RECOMMENDATIONS */}
         <View style={styles.sectionRow}>
           <Text style={[styles.sectionTitle, { color: t.text }]}>Untukmu Hari Ini</Text>
         </View>
@@ -190,19 +260,22 @@ export default function HomeScreen() {
             <TouchableOpacity
               key={p.id}
               style={[styles.recCard, { backgroundColor: t.surface, borderColor: t.border }]}
+              onPress={() => setSheetProduct(p)}
             >
               <View style={[styles.recImg, { backgroundColor: t.accent }]}>
                 <Ionicons name="leaf-outline" size={26} color={t.primary} />
               </View>
               <Text style={[styles.recName, { color: t.text }]} numberOfLines={1}>{p.name}</Text>
-              <Text style={[styles.recPrice, { color: t.primary }]}>{p.price}</Text>
+              <Text style={[styles.recPrice, { color: t.primary }]}>
+                Rp {p.variants[0]?.price.toLocaleString('id-ID')}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </ScrollView>
 
-      {/* ── FLOATING CART ── */}
-      {cart.length > 0 && (
+      {/* FLOATING CART */}
+      {cartCount > 0 && (
         <TouchableOpacity
           style={styles.floatCartOuter}
           onPress={() => router.push('/(tabs)/cart')}
@@ -213,17 +286,25 @@ export default function HomeScreen() {
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={styles.floatCartInner}
           >
-            <View style={styles.floatCartLeft}>
+            <View style={styles.floatLeft}>
               <Ionicons name="bag-outline" size={18} color="#fff" />
-              <Text style={styles.floatCartText}>{cart.length} item dipilih</Text>
+              <Text style={styles.floatText}>{cartCount} item dipilih</Text>
             </View>
-            <View style={styles.floatCartRight}>
-              <Text style={styles.floatCartText}>Keranjang</Text>
+            <View style={styles.floatRight}>
+              <Text style={styles.floatText}>Keranjang</Text>
               <Ionicons name="arrow-forward-outline" size={16} color="#fff" />
             </View>
           </LinearGradient>
         </TouchableOpacity>
       )}
+
+      {/* BOTTOM SHEET */}
+      <ProductBottomSheet
+        visible={!!sheetProduct}
+        product={sheetProduct}
+        onClose={() => setSheetProduct(null)}
+        onAddToCart={handleAddToCart}
+      />
     </SafeAreaView>
   );
 }
@@ -269,7 +350,7 @@ const styles = StyleSheet.create({
   recPrice:         { fontSize: 13, fontWeight: '700' },
   floatCartOuter:   { position: 'absolute', bottom: 20, left: 20, right: 20, borderRadius: 16, overflow: 'hidden', elevation: 6, shadowColor: '#1A7A4A', shadowOpacity: 0.25, shadowRadius: 12 },
   floatCartInner:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 20 },
-  floatCartLeft:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  floatCartRight:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  floatCartText:    { fontSize: 14, fontWeight: '600', color: '#fff' },
+  floatLeft:        { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  floatRight:       { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  floatText:        { fontSize: 14, fontWeight: '600', color: '#fff' },
 });
