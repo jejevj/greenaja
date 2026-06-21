@@ -1,27 +1,18 @@
-import { Tabs } from 'expo-router';
+import { Stack } from 'expo-router';
+import { useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
-export default function TabLayout() {
+export default function MainLayout() {
+  const scheme = useColorScheme();
+
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: '#1a7a4a',
-        tabBarInactiveTintColor: '#9e9e9e',
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#ffffff',
-          borderTopColor: '#e8e8e8',
-          paddingBottom: 6,
-          height: 60,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
-        },
-      }}
-    >
-      <Tabs.Screen name="index" options={{ title: 'Beranda' }} />
-      <Tabs.Screen name="explore" options={{ title: 'Jelajahi' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
-    </Tabs>
+    <>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="explore" />
+        <Stack.Screen name="profile" />
+      </Stack>
+    </>
   );
 }
