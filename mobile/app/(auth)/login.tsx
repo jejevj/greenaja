@@ -1,123 +1,109 @@
 import React, { useState } from 'react';
 import {
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
+  StyleSheet, KeyboardAvoidingView, Platform,
+  ScrollView, TouchableOpacity, View, Text,
+  TextInput, Pressable, ActivityIndicator, useColorScheme,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { LIGHT, DARK } from '../../constants/Theme';
 
 export default function LoginScreen() {
+  const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [focusField, setFocusField] = useState<string | null>(null);
 
   const handleLogin = () => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      router.replace('/(tabs)');
-    }, 1000);
+    setTimeout(() => { setLoading(false); router.replace('/(tabs)'); }, 900);
   };
 
+  const borderOf = (field: string) =>
+    focusField === field ? t.primary : t.border;
+
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Top gradient header */}
-        <LinearGradient colors={['#1a7a4a', '#2d9966']} style={styles.topBar}>
-          <View style={styles.logoRow}>
-            <Text style={styles.logoIcon}>🌿</Text>
-            <Text style={styles.logoText}>GreenAja</Text>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: t.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={[styles.content, { backgroundColor: t.bg }]} keyboardShouldPersistTaps="handled">
+
+        {/* Brand */}
+        <View style={styles.brand}>
+          <View style={[styles.logoBox, { backgroundColor: t.primaryMuted, borderColor: t.border }]}>
+            <Text style={[styles.logoText, { color: t.primary }]}>G</Text>
           </View>
-          <Text style={styles.welcomeText}>Selamat datang kembali</Text>
-        </LinearGradient>
+          <Text style={[styles.appName, { color: t.text }]}>GreenAja</Text>
+          <Text style={[styles.appSub, { color: t.textSub }]}>Pasar Sayur Lokal Terpercaya</Text>
+        </View>
 
-        {/* Form Card */}
-        <View style={styles.card}>
-          <Text style={styles.formTitle}>Masuk</Text>
+        {/* Form */}
+        <View style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>
+          <Text style={[styles.formTitle, { color: t.text }]}>Masuk</Text>
 
-          {/* Email */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="contoh@email.com"
-              placeholderTextColor="#bbb"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          {/* Password */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.pwWrapper}>
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: t.textSub }]}>Email</Text>
+            <View style={[styles.inputRow, { borderColor: borderOf('email'), backgroundColor: t.bg }]}>
+              <Ionicons name="mail-outline" size={18} color={t.textSub} style={styles.inputIcon} />
               <TextInput
-                style={[styles.input, { flex: 1, borderWidth: 0, paddingRight: 0 }]}
+                style={[styles.input, { color: t.text }]}
+                placeholder="nama@email.com"
+                placeholderTextColor={t.textSub}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                onFocus={() => setFocusField('email')}
+                onBlur={() => setFocusField(null)}
+              />
+            </View>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: t.textSub }]}>Password</Text>
+            <View style={[styles.inputRow, { borderColor: borderOf('password'), backgroundColor: t.bg }]}>
+              <Ionicons name="lock-closed-outline" size={18} color={t.textSub} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, { color: t.text, flex: 1 }]}
                 placeholder="Masukkan password"
-                placeholderTextColor="#bbb"
+                placeholderTextColor={t.textSub}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPw}
+                onFocus={() => setFocusField('password')}
+                onBlur={() => setFocusField(null)}
               />
               <TouchableOpacity onPress={() => setShowPw(!showPw)} style={styles.eyeBtn}>
-                <Text style={styles.eyeIcon}>{showPw ? '🙈' : '👁️'}</Text>
+                <Ionicons name={showPw ? 'eye-outline' : 'eye-off-outline'} size={18} color={t.textSub} />
               </TouchableOpacity>
             </View>
           </View>
 
-          <TouchableOpacity style={styles.forgotBtn}>
-            <Text style={styles.forgotText}>Lupa password?</Text>
+          <TouchableOpacity style={styles.forgotRow}>
+            <Text style={[styles.forgotText, { color: t.primary }]}>Lupa password?</Text>
           </TouchableOpacity>
 
-          {/* Login Button */}
           <Pressable
             onPress={handleLogin}
             disabled={loading}
-            style={({ pressed }) => [styles.loginBtnOuter, pressed && { opacity: 0.85 }]}
+            style={({ pressed }) => [styles.loginBtn, { backgroundColor: t.primary, opacity: pressed ? 0.85 : 1 }]}
           >
-            <LinearGradient
-              colors={['#1a7a4a', '#2d9966']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.loginBtnInner}
-            >
-              {loading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.loginBtnText}>Masuk</Text>
-              }
-            </LinearGradient>
+            {loading
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.loginBtnText}>Masuk</Text>
+            }
           </Pressable>
 
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>atau</Text>
-            <View style={styles.dividerLine} />
+          <View style={styles.divider}>
+            <View style={[styles.divLine, { backgroundColor: t.border }]} />
+            <Text style={[styles.divText, { color: t.textSub }]}>atau</Text>
+            <View style={[styles.divLine, { backgroundColor: t.border }]} />
           </View>
 
-          {/* Register Link */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Belum punya akun? </Text>
+            <Text style={[styles.footerText, { color: t.textSub }]}>Belum punya akun? </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-              <Text style={styles.registerLink}>Daftar sekarang</Text>
+              <Text style={[styles.footerLink, { color: t.primary }]}>Daftar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -127,63 +113,28 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f4f9f6' },
-  content: { flexGrow: 1 },
-  topBar: {
-    paddingTop: 64,
-    paddingBottom: 48,
-    paddingHorizontal: 28,
-  },
-  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  logoIcon: { fontSize: 28 },
-  logoText: { fontSize: 24, fontWeight: '700', color: '#fff' },
-  welcomeText: { fontSize: 15, color: 'rgba(255,255,255,0.75)' },
-  card: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    marginTop: -24,
-    flex: 1,
-    padding: 28,
-    paddingTop: 32,
-  },
-  formTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a1a', marginBottom: 24 },
-  fieldGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 8 },
-  input: {
-    backgroundColor: '#f7f7f7',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: '#1a1a1a',
-    borderWidth: 1.5,
-    borderColor: '#ebebeb',
-  },
-  pwWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f7f7f7',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#ebebeb',
-    paddingHorizontal: 16,
-  },
-  eyeBtn: { paddingLeft: 8, paddingVertical: 14 },
-  eyeIcon: { fontSize: 16 },
-  forgotBtn: { alignSelf: 'flex-end', marginBottom: 24 },
-  forgotText: { fontSize: 13, color: '#1a7a4a', fontWeight: '500' },
-  loginBtnOuter: { borderRadius: 14, overflow: 'hidden', marginBottom: 20 },
-  loginBtnInner: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loginBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.3 },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#efefef' },
-  dividerText: { fontSize: 13, color: '#bbb' },
-  footer: { flexDirection: 'row', justifyContent: 'center' },
-  footerText: { fontSize: 14, color: '#888' },
-  registerLink: { fontSize: 14, color: '#1a7a4a', fontWeight: '700' },
+  content:      { flexGrow: 1, padding: 24, justifyContent: 'center' },
+  brand:        { alignItems: 'center', marginBottom: 32, gap: 8 },
+  logoBox:      { width: 64, height: 64, borderRadius: 20, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  logoText:     { fontSize: 32, fontWeight: '800' },
+  appName:      { fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
+  appSub:       { fontSize: 13 },
+  card:         { borderRadius: 20, borderWidth: 1, padding: 24 },
+  formTitle:    { fontSize: 20, fontWeight: '700', marginBottom: 24 },
+  field:        { marginBottom: 16 },
+  label:        { fontSize: 12, fontWeight: '600', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  inputRow:     { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1.5, paddingHorizontal: 14, height: 50 },
+  inputIcon:    { marginRight: 10 },
+  input:        { flex: 1, fontSize: 15 },
+  eyeBtn:       { paddingLeft: 8 },
+  forgotRow:    { alignSelf: 'flex-end', marginBottom: 20 },
+  forgotText:   { fontSize: 13, fontWeight: '600' },
+  loginBtn:     { height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  loginBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.2 },
+  divider:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
+  divLine:      { flex: 1, height: 1 },
+  divText:      { fontSize: 12 },
+  footer:       { flexDirection: 'row', justifyContent: 'center' },
+  footerText:   { fontSize: 14 },
+  footerLink:   { fontSize: 14, fontWeight: '700' },
 });
