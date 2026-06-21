@@ -9,7 +9,7 @@ import { router } from 'expo-router';
 import { LIGHT, DARK } from '../../constants/Theme';
 
 const { width } = Dimensions.get('window');
-const TAB_W = (width - 40 - 12) / 4; // 4 cards fit, 20px side padding, 4×3 gaps
+const TAB_W = (width - 40 - 12) / 4;
 
 type OrderStatus = 'packing' | 'shipping' | 'delivered' | 'confirmed';
 
@@ -19,6 +19,8 @@ type Order = {
   status: OrderStatus;
   items: { name: string; qty: number }[];
   total: number;
+  reviewed?: boolean;   // sudah direview atau belum
+  reviewRating?: number; // rating keseluruhan jika sudah review
 };
 
 const DUMMY_ORDERS: Order[] = [
@@ -37,6 +39,8 @@ const DUMMY_ORDERS: Order[] = [
     id: 'GRN-20260618-3102',
     date: '18 Jun 2026',
     status: 'delivered',
+    reviewed: true,
+    reviewRating: 5,
     items: [{ name: 'Kangkung Segar', qty: 3 }, { name: 'Cabai Merah', qty: 1 }],
     total: 27500,
   },
@@ -44,6 +48,7 @@ const DUMMY_ORDERS: Order[] = [
     id: 'GRN-20260610-5577',
     date: '10 Jun 2026',
     status: 'delivered',
+    reviewed: false,
     items: [{ name: 'Brokoli Organik', qty: 1 }, { name: 'Bayam Segar', qty: 2 }],
     total: 35000,
   },
@@ -79,6 +84,23 @@ const TAB_ACTIVE_BG: Record<TabKey, string> = {
   delivered: '#F3F4F6',
 };
 
+const RATING_LABEL = ['', 'Sangat Buruk', 'Kurang', 'Cukup', 'Baik', 'Sangat Baik'];
+
+function StarRow({ rating, size = 14 }: { rating: number; size?: number }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 2 }}>
+      {[1,2,3,4,5].map(s => (
+        <Ionicons
+          key={s}
+          name={s <= rating ? 'star' : 'star-outline'}
+          size={size}
+          color={s <= rating ? '#F59E0B' : '#D1D5DB'}
+        />
+      ))}
+    </View>
+  );
+}
+
 export default function OrdersScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const [activeTab, setActiveTab] = useState<TabKey>('all');
@@ -108,12 +130,12 @@ export default function OrdersScreen() {
         </View>
       </View>
 
-      {/* ── Filter Tab Cards ── */}
+      {/* Filter Tab Cards */}
       <View style={styles.tabRow}>
         {TABS.map(tab => {
-          const active = activeTab === tab.key;
-          const count  = getCount(tab.key);
-          const accent = TAB_ACTIVE_COLOR[tab.key];
+          const active   = activeTab === tab.key;
+          const count    = getCount(tab.key);
+          const accent   = TAB_ACTIVE_COLOR[tab.key];
           const accentBg = TAB_ACTIVE_BG[tab.key];
           return (
             <TouchableOpacity
@@ -122,33 +144,16 @@ export default function OrdersScreen() {
               activeOpacity={0.75}
               style={[
                 styles.tabCard,
-                {
-                  backgroundColor: active ? accentBg : t.surface,
-                  borderColor:     active ? accent    : t.border,
-                  width: TAB_W,
-                },
+                { backgroundColor: active ? accentBg : t.surface, borderColor: active ? accent : t.border, width: TAB_W },
               ]}
             >
-              {/* Icon circle */}
-              <View style={[
-                styles.tabIconCircle,
-                { backgroundColor: active ? accent : t.accent },
-              ]}>
-                <Ionicons
-                  name={tab.icon as any}
-                  size={18}
-                  color={active ? '#fff' : t.textSub}
-                />
+              <View style={[styles.tabIconCircle, { backgroundColor: active ? accent : t.accent }]}>
+                <Ionicons name={tab.icon as any} size={18} color={active ? '#fff' : t.textSub} />
               </View>
-              {/* Count badge */}
               <View style={[styles.tabCount, { backgroundColor: active ? accent : t.border }]}>
                 <Text style={[styles.tabCountText, { color: active ? '#fff' : t.textSub }]}>{count}</Text>
               </View>
-              {/* Label */}
-              <Text
-                style={[styles.tabLabel, { color: active ? accent : t.textSub }]}
-                numberOfLines={1}
-              >
+              <Text style={[styles.tabLabel, { color: active ? accent : t.textSub }]} numberOfLines={1}>
                 {tab.label}
               </Text>
             </TouchableOpacity>
@@ -156,7 +161,7 @@ export default function OrdersScreen() {
         })}
       </View>
 
-      {/* ── Order List ── */}
+      {/* Order List */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, paddingTop: 4 }}
@@ -168,8 +173,12 @@ export default function OrdersScreen() {
           </View>
         ) : (
           filtered.map(order => {
-            const meta    = STATUS_META[order.status];
+            const meta     = STATUS_META[order.status];
             const isActive = order.status === 'packing' || order.status === 'shipping';
+            const isDone   = order.status === 'delivered';
+            const reviewed = isDone && order.reviewed === true;
+            const needReview = isDone && order.reviewed === false;
+
             return (
               <TouchableOpacity
                 key={order.id}
@@ -180,9 +189,18 @@ export default function OrdersScreen() {
                 {/* Top */}
                 <View style={styles.cardTop}>
                   <Text style={[styles.orderId, { color: t.textSub }]}>{order.id}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
-                    <Ionicons name={meta.icon as any} size={11} color={meta.color} />
-                    <Text style={[styles.statusText, { color: meta.color }]}>{meta.label}</Text>
+                  <View style={styles.cardTopRight}>
+                    {/* Reviewed badge */}
+                    {reviewed && (
+                      <View style={[styles.reviewedBadge, { backgroundColor: '#D1FAE5' }]}>
+                        <Ionicons name="star" size={10} color="#059669" />
+                        <Text style={[styles.reviewedText, { color: '#059669' }]}>Sudah Direview</Text>
+                      </View>
+                    )}
+                    <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
+                      <Ionicons name={meta.icon as any} size={11} color={meta.color} />
+                      <Text style={[styles.statusText, { color: meta.color }]}>{meta.label}</Text>
+                    </View>
                   </View>
                 </View>
 
@@ -198,6 +216,36 @@ export default function OrdersScreen() {
                     <Text style={[styles.dateText, { color: t.textSub }]}>{order.date}</Text>
                   </View>
                 </View>
+
+                {/* Rating display (if already reviewed) */}
+                {reviewed && order.reviewRating && (
+                  <View style={[styles.ratingDisplay, { backgroundColor: '#FFFBEB', borderTopColor: t.border }]}>
+                    <StarRow rating={order.reviewRating} />
+                    <Text style={[styles.ratingDisplayLabel, { color: '#92400E' }]}>
+                      {RATING_LABEL[order.reviewRating]}
+                    </Text>
+                  </View>
+                )}
+
+                {/* CTA: beri review (if not reviewed yet) */}
+                {needReview && (
+                  <TouchableOpacity
+                    style={[styles.reviewCta, { backgroundColor: '#FFFBEB', borderTopColor: '#FDE68A' }]}
+                    activeOpacity={0.75}
+                    onPress={e => {
+                      e.stopPropagation();
+                      router.push({ pathname: '/(tabs)/order-review', params: { orderId: order.id } });
+                    }}
+                  >
+                    <View style={styles.reviewCtaLeft}>
+                      {[1,2,3,4,5].map(s => (
+                        <Ionicons key={s} name="star-outline" size={18} color="#F59E0B" />
+                      ))}
+                    </View>
+                    <Text style={styles.reviewCtaText}>Beri Ulasan</Text>
+                    <Ionicons name="chevron-forward-outline" size={14} color="#D97706" />
+                  </TouchableOpacity>
+                )}
 
                 {/* Bottom */}
                 <View style={[styles.cardBottom, { borderTopColor: t.border }]}>
@@ -229,35 +277,46 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe:          { flex: 1 },
-  header:        { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
-  backBtn:       { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  title:         { fontSize: 20, fontWeight: '800', letterSpacing: -0.3 },
-  subtitle:      { fontSize: 13, marginTop: 2 },
+  safe:             { flex: 1 },
+  header:           { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
+  backBtn:          { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  title:            { fontSize: 20, fontWeight: '800', letterSpacing: -0.3 },
+  subtitle:         { fontSize: 13, marginTop: 2 },
 
-  // Tab cards
-  tabRow:        { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 16, gap: 8 },
-  tabCard:       { borderWidth: 1.5, borderRadius: 14, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4, position: 'relative' },
-  tabIconCircle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  tabCount:      { position: 'absolute', top: 6, right: 6, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  tabCountText:  { fontSize: 10, fontWeight: '800' },
-  tabLabel:      { fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  tabRow:           { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 16, gap: 8 },
+  tabCard:          { borderWidth: 1.5, borderRadius: 14, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4, position: 'relative' },
+  tabIconCircle:    { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  tabCount:         { position: 'absolute', top: 6, right: 6, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  tabCountText:     { fontSize: 10, fontWeight: '800' },
+  tabLabel:         { fontSize: 11, fontWeight: '700', textAlign: 'center' },
 
-  // List
-  emptyBox:      { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyText:     { fontSize: 14 },
-  orderCard:     { borderRadius: 16, borderWidth: 1, marginBottom: 12, overflow: 'hidden' },
-  cardTop:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
-  orderId:       { fontSize: 12, fontWeight: '600' },
-  statusBadge:   { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  statusText:    { fontSize: 11, fontWeight: '700' },
-  itemsRow:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingBottom: 12 },
-  itemIconBox:   { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  itemsText:     { fontSize: 13, fontWeight: '600', marginBottom: 2 },
-  dateText:      { fontSize: 11 },
-  cardBottom:    { flexDirection: 'row', alignItems: 'center', gap: 6, borderTopWidth: 1, paddingHorizontal: 14, paddingVertical: 11 },
-  totalLabel:    { fontSize: 12 },
-  totalValue:    { fontSize: 14, fontWeight: '700', marginLeft: 4 },
-  actionBtn:     { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
-  actionBtnText: { fontSize: 11, fontWeight: '700' },
+  emptyBox:         { alignItems: 'center', paddingTop: 80, gap: 12 },
+  emptyText:        { fontSize: 14 },
+
+  orderCard:        { borderRadius: 16, borderWidth: 1, marginBottom: 12, overflow: 'hidden' },
+  cardTop:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
+  cardTopRight:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  orderId:          { fontSize: 12, fontWeight: '600', flex: 1, marginRight: 8 },
+  reviewedBadge:    { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  reviewedText:     { fontSize: 10, fontWeight: '700' },
+  statusBadge:      { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  statusText:       { fontSize: 11, fontWeight: '700' },
+
+  itemsRow:         { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingBottom: 12 },
+  itemIconBox:      { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  itemsText:        { fontSize: 13, fontWeight: '600', marginBottom: 2 },
+  dateText:         { fontSize: 11 },
+
+  ratingDisplay:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: 1 },
+  ratingDisplayLabel: { fontSize: 12, fontWeight: '700', color: '#92400E' },
+
+  reviewCta:        { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: 1.5 },
+  reviewCtaLeft:    { flexDirection: 'row', gap: 2 },
+  reviewCtaText:    { flex: 1, fontSize: 13, fontWeight: '700', color: '#92400E' },
+
+  cardBottom:       { flexDirection: 'row', alignItems: 'center', gap: 6, borderTopWidth: 1, paddingHorizontal: 14, paddingVertical: 11 },
+  totalLabel:       { fontSize: 12 },
+  totalValue:       { fontSize: 14, fontWeight: '700', marginLeft: 4 },
+  actionBtn:        { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 },
+  actionBtnText:    { fontSize: 11, fontWeight: '700' },
 });
