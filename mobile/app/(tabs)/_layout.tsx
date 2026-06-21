@@ -4,14 +4,14 @@ import { StatusBar } from 'expo-status-bar';
 
 export default function MainLayout() {
   const scheme = useColorScheme();
-
   return (
     <>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="explore" />
         <Stack.Screen name="profile" />
+        <Stack.Screen name="cart" />
       </Stack>
     </>
   );
