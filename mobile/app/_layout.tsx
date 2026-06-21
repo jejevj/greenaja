@@ -7,7 +7,6 @@ import { Colors, Typography, ThemeManager } from 'react-native-ui-lib';
 
 SplashScreen.preventAutoHideAsync();
 
-// Setup RNUILIB colors per official docs
 Colors.loadColors({
   primaryGreen: '#1a7a4a',
   lightGreen: '#4caf50',
@@ -15,36 +14,19 @@ Colors.loadColors({
   accent: '#f9a825',
   bgLight: '#f4f9f6',
   textPrimary: '#1a1a1a',
-  textMuted: '#666666',
+  textMuted: '#888888',
   white: '#ffffff',
   error: '#e53935',
 });
 
-// Setup Typography
 Typography.loadTypographies({
-  heading: { fontSize: 24, fontWeight: '700', color: Colors.textPrimary },
-  subheading: { fontSize: 18, fontWeight: '600', color: Colors.textPrimary },
-  body: { fontSize: 15, color: Colors.textPrimary },
-  caption: { fontSize: 12, color: Colors.textMuted },
+  heading: { fontSize: 24, fontWeight: '700', color: '#1a1a1a' },
+  subheading: { fontSize: 16, fontWeight: '700', color: '#1a1a1a' },
+  body: { fontSize: 15, color: '#1a1a1a' },
+  caption: { fontSize: 12, color: '#888888' },
 });
 
-// Setup default component themes
-ThemeManager.setComponentTheme('Button', {
-  borderRadius: 12,
-  backgroundColor: Colors.primaryGreen,
-});
-
-ThemeManager.setComponentTheme('TextField', {
-  borderRadius: 12,
-  fieldStyle: {
-    borderWidth: 1.5,
-    borderColor: Colors.$outlineDefault,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: Colors.white,
-  },
-});
+ThemeManager.setComponentTheme('Button', { borderRadius: 12 });
 
 export default function RootLayout() {
   useEffect(() => {
@@ -59,7 +41,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="+not-found" />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </GestureHandlerRootView>
   );
 }

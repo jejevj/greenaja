@@ -5,19 +5,19 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
-} from 'react-native';
-import {
   View,
   Text,
-  Button,
-  Colors,
-  TextField,
-} from 'react-native-ui-lib';
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = () => {
@@ -38,55 +38,88 @@ export default function LoginScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.emoji}>🌿</Text>
-          <Text heading style={styles.title}>GreenAja</Text>
-          <Text body style={styles.subtitle}>Masuk ke akun kamu</Text>
-        </View>
+        {/* Top gradient header */}
+        <LinearGradient colors={['#1a7a4a', '#2d9966']} style={styles.topBar}>
+          <View style={styles.logoRow}>
+            <Text style={styles.logoIcon}>🌿</Text>
+            <Text style={styles.logoText}>GreenAja</Text>
+          </View>
+          <Text style={styles.welcomeText}>Selamat datang kembali</Text>
+        </LinearGradient>
 
-        {/* Form */}
-        <View style={styles.form}>
-          <TextField
-            placeholder="Email"
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            fieldStyle={styles.field}
-            labelStyle={styles.label}
-          />
+        {/* Form Card */}
+        <View style={styles.card}>
+          <Text style={styles.formTitle}>Masuk</Text>
 
-          <TextField
-            placeholder="Password"
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            fieldStyle={styles.field}
-            labelStyle={styles.label}
-          />
+          {/* Email */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="contoh@email.com"
+              placeholderTextColor="#bbb"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          {/* Password */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.pwWrapper}>
+              <TextInput
+                style={[styles.input, { flex: 1, borderWidth: 0, paddingRight: 0 }]}
+                placeholder="Masukkan password"
+                placeholderTextColor="#bbb"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPw}
+              />
+              <TouchableOpacity onPress={() => setShowPw(!showPw)} style={styles.eyeBtn}>
+                <Text style={styles.eyeIcon}>{showPw ? '🙈' : '👁️'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           <TouchableOpacity style={styles.forgotBtn}>
             <Text style={styles.forgotText}>Lupa password?</Text>
           </TouchableOpacity>
 
-          <Button
-            label={loading ? 'Masuk...' : 'Masuk'}
-            disabled={loading}
+          {/* Login Button */}
+          <Pressable
             onPress={handleLogin}
-            size={Button.sizes.large}
-            style={styles.btn}
-          />
-        </View>
+            disabled={loading}
+            style={({ pressed }) => [styles.loginBtnOuter, pressed && { opacity: 0.85 }]}
+          >
+            <LinearGradient
+              colors={['#1a7a4a', '#2d9966']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.loginBtnInner}
+            >
+              {loading
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.loginBtnText}>Masuk</Text>
+              }
+            </LinearGradient>
+          </Pressable>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text body style={styles.footerText}>Belum punya akun? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-            <Text style={styles.link}>Daftar sekarang</Text>
-          </TouchableOpacity>
+          {/* Divider */}
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>atau</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Register Link */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Belum punya akun? </Text>
+            <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+              <Text style={styles.registerLink}>Daftar sekarang</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -94,27 +127,63 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bgLight },
-  content: { flexGrow: 1, padding: 24 },
-  header: { alignItems: 'center', marginTop: 60, marginBottom: 40 },
-  emoji: { fontSize: 52, marginBottom: 12 },
-  title: { color: Colors.primaryGreen },
-  subtitle: { color: Colors.textMuted, marginTop: 6 },
-  form: { gap: 16 },
-  label: { fontSize: 14, fontWeight: '500', color: Colors.textPrimary, marginBottom: 6 },
-  field: {
-    borderWidth: 1.5,
-    borderColor: '#e0e0e0',
+  container: { flex: 1, backgroundColor: '#f4f9f6' },
+  content: { flexGrow: 1 },
+  topBar: {
+    paddingTop: 64,
+    paddingBottom: 48,
+    paddingHorizontal: 28,
+  },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  logoIcon: { fontSize: 28 },
+  logoText: { fontSize: 24, fontWeight: '700', color: '#fff' },
+  welcomeText: { fontSize: 15, color: 'rgba(255,255,255,0.75)' },
+  card: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    flex: 1,
+    padding: 28,
+    paddingTop: 32,
+  },
+  formTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a1a', marginBottom: 24 },
+  fieldGroup: { marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 8 },
+  input: {
+    backgroundColor: '#f7f7f7',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 13,
-    backgroundColor: Colors.white,
+    paddingVertical: 14,
     fontSize: 15,
+    color: '#1a1a1a',
+    borderWidth: 1.5,
+    borderColor: '#ebebeb',
   },
-  forgotBtn: { alignSelf: 'flex-end' },
-  forgotText: { fontSize: 13, color: Colors.primaryGreen },
-  btn: { marginTop: 8, backgroundColor: Colors.primaryGreen },
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 32, paddingBottom: 24 },
-  footerText: { color: Colors.textMuted },
-  link: { fontSize: 14, color: Colors.primaryGreen, fontWeight: '600' },
+  pwWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f7f7f7',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#ebebeb',
+    paddingHorizontal: 16,
+  },
+  eyeBtn: { paddingLeft: 8, paddingVertical: 14 },
+  eyeIcon: { fontSize: 16 },
+  forgotBtn: { alignSelf: 'flex-end', marginBottom: 24 },
+  forgotText: { fontSize: 13, color: '#1a7a4a', fontWeight: '500' },
+  loginBtnOuter: { borderRadius: 14, overflow: 'hidden', marginBottom: 20 },
+  loginBtnInner: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loginBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.3 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#efefef' },
+  dividerText: { fontSize: 13, color: '#bbb' },
+  footer: { flexDirection: 'row', justifyContent: 'center' },
+  footerText: { fontSize: 14, color: '#888' },
+  registerLink: { fontSize: 14, color: '#1a7a4a', fontWeight: '700' },
 });

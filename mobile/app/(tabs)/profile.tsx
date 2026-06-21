@@ -1,101 +1,134 @@
 import React from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { View, Text, Avatar, Card, Colors, ListItem } from 'react-native-ui-lib';
+import { ScrollView, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 const MENU = [
-  { label: 'Edit Profil', icon: '👤' },
-  { label: 'Riwayat Aktivitas', icon: '📋' },
-  { label: 'Pengaturan', icon: '⚙️' },
-  { label: 'Bantuan', icon: '❓' },
+  { label: 'Edit Profil', icon: '👤', sub: 'Ubah informasi akun' },
+  { label: 'Riwayat Aktivitas', icon: '📋', sub: 'Lihat semua aktivitas' },
+  { label: 'Pengaturan', icon: '⚙️', sub: 'Notifikasi & preferensi' },
+  { label: 'Bantuan', icon: '❓', sub: 'FAQ & kontak support' },
 ];
 
 export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header} center>
-          <Avatar size={80} label="GA" backgroundColor={Colors.lightGreen} marginB-12 />
-          <Text heading color={Colors.white}>GreenAja User</Text>
-          <Text caption color="rgba(255,255,255,0.75)" marginT-4>
-            Level: Penjaga Bumi 🌍
-          </Text>
+        <LinearGradient colors={['#1a7a4a', '#2d9966']} style={styles.header}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>GA</Text>
+          </View>
+          <Text style={styles.userName}>GreenAja User</Text>
+          <Text style={styles.userLevel}>Level: Penjaga Bumi 🌍</Text>
+        </LinearGradient>
+
+        {/* Stats Card */}
+        <View style={styles.statsCard}>
+          {[['248', 'Total Poin'], ['12', 'Tantangan'], ['5', 'Badge']].map(([val, lbl], i) => (
+            <React.Fragment key={i}>
+              {i > 0 && <View style={styles.vDivider} />}
+              <View style={styles.statItem}>
+                <Text style={styles.statVal}>{val}</Text>
+                <Text style={styles.statLbl}>{lbl}</Text>
+              </View>
+            </React.Fragment>
+          ))}
         </View>
 
-        {/* Stats */}
-        <Card style={styles.statsCard} row spread padding-20>
-          <View center>
-            <Text style={styles.statNum}>248</Text>
-            <Text caption color={Colors.textMuted}>Total Poin</Text>
-          </View>
-          <View style={styles.vDivider} />
-          <View center>
-            <Text style={styles.statNum}>12</Text>
-            <Text caption color={Colors.textMuted}>Tantangan</Text>
-          </View>
-          <View style={styles.vDivider} />
-          <View center>
-            <Text style={styles.statNum}>5</Text>
-            <Text caption color={Colors.textMuted}>Badge</Text>
-          </View>
-        </Card>
-
         {/* Menu */}
-        <Card style={styles.menuCard} marginH-16>
+        <View style={styles.menuCard}>
           {MENU.map((item, i) => (
-            <ListItem
+            <TouchableOpacity
               key={i}
-              height={54}
-              onPress={() => {}}
-              style={i < MENU.length - 1 ? styles.menuBorder : undefined}
+              style={[styles.menuItem, i < MENU.length - 1 && styles.menuBorder]}
+              activeOpacity={0.7}
             >
-              <ListItem.Part left>
-                <Text style={styles.icon}>{item.icon}</Text>
-              </ListItem.Part>
-              <ListItem.Part middle>
-                <Text body>{item.label}</Text>
-              </ListItem.Part>
-              <ListItem.Part right>
-                <Text style={styles.arrow}>›</Text>
-              </ListItem.Part>
-            </ListItem>
+              <View style={styles.menuIconBox}>
+                <Text style={{ fontSize: 18 }}>{item.icon}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                <Text style={styles.menuSub}>{item.sub}</Text>
+              </View>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
           ))}
+        </View>
 
-          {/* Logout */}
-          <ListItem height={54} onPress={() => router.replace('/(auth)/login')}>
-            <ListItem.Part left>
-              <Text style={styles.icon}>🚪</Text>
-            </ListItem.Part>
-            <ListItem.Part middle>
-              <Text body color={Colors.error}>Keluar</Text>
-            </ListItem.Part>
-          </ListItem>
-        </Card>
+        {/* Logout */}
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          activeOpacity={0.8}
+          onPress={() => router.replace('/(auth)/login')}
+        >
+          <Text style={styles.logoutText}>🚪 Keluar</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bgLight },
+  safe: { flex: 1, backgroundColor: '#f4f9f6' },
   content: { paddingBottom: 32 },
-  header: {
-    backgroundColor: Colors.primaryGreen,
-    paddingTop: 32,
-    paddingBottom: 28,
+  header: { alignItems: 'center', paddingTop: 36, paddingBottom: 36 },
+  avatarCircle: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 12,
   },
+  avatarText: { fontSize: 28, fontWeight: '700', color: '#fff' },
+  userName: { fontSize: 20, fontWeight: '700', color: '#fff', marginBottom: 4 },
+  userLevel: { fontSize: 13, color: 'rgba(255,255,255,0.72)' },
   statsCard: {
-    marginHorizontal: 16,
-    marginTop: -1,
-    borderRadius: 16,
-    backgroundColor: Colors.white,
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginTop: -20,
+    borderRadius: 18,
+    paddingVertical: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  statNum: { fontSize: 22, fontWeight: '700', color: Colors.primaryGreen },
-  vDivider: { width: 1, height: 36, backgroundColor: '#f0f0f0' },
-  menuCard: { borderRadius: 14, backgroundColor: Colors.white, marginTop: 16, overflow: 'hidden' },
+  statItem: { flex: 1, alignItems: 'center' },
+  statVal: { fontSize: 22, fontWeight: '700', color: '#1a7a4a' },
+  statLbl: { fontSize: 12, color: '#aaa', marginTop: 2 },
+  vDivider: { width: 1, height: 36, backgroundColor: '#f0f0f0', alignSelf: 'center' },
+  menuCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  menuItem: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
   menuBorder: { borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
-  icon: { fontSize: 18, marginHorizontal: 16 },
-  arrow: { fontSize: 20, color: '#ccc', marginRight: 12 },
+  menuIconBox: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: '#f0f9f4',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  menuLabel: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
+  menuSub: { fontSize: 12, color: '#aaa', marginTop: 1 },
+  menuArrow: { fontSize: 20, color: '#ccc' },
+  logoutBtn: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#ffebee',
+  },
+  logoutText: { fontSize: 15, fontWeight: '600', color: '#e53935' },
 });
