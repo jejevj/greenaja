@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   ScrollView, StyleSheet, View, Text,
   TouchableOpacity, useColorScheme, Dimensions,
   FlatList, Animated, NativeScrollEvent, NativeSyntheticEvent,
-  ActivityIndicator,
+  ActivityIndicator, AppState, AppStateStatus, Modal, Linking, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,115 +21,252 @@ const { width } = Dimensions.get('window');
 type LocationState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'denied' }
+  | { status: 'denied' }        // izin ditolak
+  | { status: 'location_off' }  // izin ada, tapi GPS/layanan lokasi dimatikan
   | { status: 'error' }
   | { status: 'ok'; kecamatan: string; kota?: string };
 
-// ─── Hook lokasi: langsung cek status izin (TIDAK minta ulang — sudah diminta di _layout) ─
+// ─── Nominatim reverse geocode → kecamatan ───────────────────────────────────
+async function reverseGeocode(lat: number, lon: number): Promise<{ kecamatan: string; kota?: string } | null> {
+  const res = await global.fetch(
+    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,
+    { headers: { 'Accept-Language': 'id', 'User-Agent': 'GreenAjaApp/1.0 (com.greenaja.app)' } }
+  );
+  const data = await res.json();
+  const addr = data?.address ?? {};
+
+  /**
+   * Urutan prioritas untuk kecamatan Indonesia di Nominatim / OSM:
+   * - county       → OSM Indonesia memetakan KECAMATAN ke field ini
+   * - suburb       → kadang terisi di kota besar
+   * - city_district→ alternatif suburb
+   * - quarter      → area kecil di bawah suburb
+   * - village      → desa / kelurahan (lebih spesifik dari kecamatan)
+   * - town         → kota kecil
+   * Hindari city / regency karena itu level KABUPATEN/KOTA, bukan kecamatan.
+   */
+  const kecamatan =
+    addr.county ??
+    addr.suburb ??
+    addr.city_district ??
+    addr.quarter ??
+    addr.village ??
+    addr.town ??
+    null;
+
+  if (!kecamatan) return null;
+
+  const kota = addr.city ?? addr.regency ?? addr.state ?? undefined;
+  return { kecamatan, kota };
+}
+
+// ─── Hook lokasi + monitoring GPS dimatikan ───────────────────────────────────
 function useKecamatan() {
   const [loc, setLoc] = useState<LocationState>({ status: 'idle' });
 
-  const resolve = async () => {
+  const resolve = useCallback(async () => {
     setLoc({ status: 'loading' });
     try {
-      // Cek status izin — tidak meminta ulang
+      // 1. Cek izin
       const { status } = await Location.getForegroundPermissionsAsync();
-      if (status !== 'granted') { setLoc({ status: 'denied' }); return; }
+      if (status !== 'granted') {
+        setLoc({ status: 'denied' });
+        return;
+      }
 
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      // 2. Cek apakah layanan lokasi (GPS) aktif
+      const serviceEnabled = await Location.hasServicesEnabledAsync();
+      if (!serviceEnabled) {
+        setLoc({ status: 'location_off' });
+        return;
+      }
+
+      // 3. Ambil koordinat
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High, // High lebih akurat untuk reverse geocode
+      });
       const { latitude, longitude } = pos.coords;
 
-      const res = await global.fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
-        { headers: { 'Accept-Language': 'id', 'User-Agent': 'GreenAjaApp/1.0 (com.greenaja.app)' } }
-      );
-      const data = await res.json();
-      const addr = data?.address ?? {};
+      // 4. Reverse geocode
+      const result = await reverseGeocode(latitude, longitude);
+      if (!result) {
+        setLoc({ status: 'error' });
+        return;
+      }
 
-      const kecamatan =
-        addr.suburb ?? addr.city_district ?? addr.quarter ??
-        addr.village ?? addr.town ?? addr.county ?? null;
-
-      if (!kecamatan) { setLoc({ status: 'error' }); return; }
-
-      setLoc({
-        status: 'ok',
-        kecamatan,
-        kota: addr.city ?? addr.regency ?? addr.state ?? undefined,
-      });
-    } catch {
-      setLoc({ status: 'error' });
+      setLoc({ status: 'ok', ...result });
+    } catch (e: any) {
+      // Location service not available
+      if (e?.code === 'E_LOCATION_SERVICES_DISABLED') {
+        setLoc({ status: 'location_off' });
+      } else {
+        setLoc({ status: 'error' });
+      }
     }
-  };
+  }, []);
 
-  // Jalankan setelah _layout selesai request izin (delay kecil)
+  // Pertama kali load (delay kecil agar _layout sudah selesai request izin)
   useEffect(() => {
     const t = setTimeout(resolve, 600);
     return () => clearTimeout(t);
   }, []);
 
+  // Re-check setiap app kembali ke foreground
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
+      if (state === 'active') resolve();
+    });
+    return () => sub.remove();
+  }, [resolve]);
+
+  // Polling setiap 30 detik untuk deteksi GPS dimatikan mid-session
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const serviceEnabled = await Location.hasServicesEnabledAsync().catch(() => false);
+      if (!serviceEnabled) {
+        setLoc(prev => prev.status !== 'location_off' ? { status: 'location_off' } : prev);
+      } else if (loc.status === 'location_off') {
+        // GPS baru dinyalakan lagi → resolve ulang
+        resolve();
+      }
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [loc.status, resolve]);
+
   return { loc, refetch: resolve };
 }
+
+// ─── Modal: GPS / layanan lokasi dimatikan ────────────────────────────────────
+function LocationOffModal({ visible, t }: { visible: boolean; t: typeof LIGHT }) {
+  const openLocationSettings = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('App-Prefs:Privacy&path=LOCATION');
+    } else {
+      Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() =>
+        Linking.openSettings()
+      );
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+    >
+      <View style={gpsStyles.overlay}>
+        <View style={[gpsStyles.card, { backgroundColor: t.surface }]}>
+          <View style={[gpsStyles.iconWrap, { backgroundColor: t.primaryMuted }]}>
+            <Ionicons name="location-off-outline" size={32} color={t.primary} />
+          </View>
+          <Text style={[gpsStyles.title, { color: t.text }]}>Lokasi Dimatikan</Text>
+          <Text style={[gpsStyles.desc, { color: t.textSub }]}>
+            Layanan lokasi (GPS) kamu sedang mati. GreenAja membutuhkan lokasi untuk
+            menampilkan kecamatan dan menemukan produk di sekitarmu.
+          </Text>
+          <TouchableOpacity
+            style={[gpsStyles.btn, { backgroundColor: t.primary }]}
+            onPress={openLocationSettings}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="settings-outline" size={16} color="#fff" />
+            <Text style={gpsStyles.btnText}>Nyalakan Lokasi</Text>
+          </TouchableOpacity>
+          <Text style={[gpsStyles.hint, { color: t.textSub }]}>
+            Akan otomatis terdeteksi setelah lokasi dinyalakan
+          </Text>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const gpsStyles = StyleSheet.create({
+  overlay:  { flex:1, backgroundColor:'rgba(0,0,0,0.55)', justifyContent:'center', alignItems:'center', padding:32 },
+  card:     { width:'100%', borderRadius:24, padding:28, alignItems:'center', gap:12 },
+  iconWrap: { width:64, height:64, borderRadius:20, alignItems:'center', justifyContent:'center', marginBottom:4 },
+  title:    { fontSize:18, fontWeight:'800', textAlign:'center' },
+  desc:     { fontSize:13, lineHeight:20, textAlign:'center' },
+  btn:      { flexDirection:'row', alignItems:'center', gap:8, paddingHorizontal:24, paddingVertical:13, borderRadius:14, marginTop:8, width:'100%', justifyContent:'center' },
+  btnText:  { fontSize:14, fontWeight:'700', color:'#fff' },
+  hint:     { fontSize:11, textAlign:'center', marginTop:4 },
+});
 
 // ─── Komponen banner lokasi ───────────────────────────────────────────────────
 function LocationBanner({ t }: { t: typeof LIGHT }) {
   const { loc, refetch } = useKecamatan();
 
-  if (loc.status === 'idle') return null;
+  // Tampilkan modal GPS-off
+  const showGpsModal = loc.status === 'location_off';
+
+  const isInteractive = loc.status !== 'ok' && loc.status !== 'loading' && loc.status !== 'location_off';
 
   return (
-    <TouchableOpacity
-      activeOpacity={loc.status === 'ok' ? 1 : 0.75}
-      onPress={loc.status !== 'ok' && loc.status !== 'loading' ? refetch : undefined}
-      style={[locStyles.banner, { backgroundColor: t.surface, borderColor: t.border }]}
-    >
-      <View style={[locStyles.pinBox, { backgroundColor: t.primaryMuted }]}>
-        <Ionicons
-          name={loc.status === 'ok' ? 'location' : 'location-outline'}
-          size={18}
-          color={loc.status === 'ok' ? t.primary : t.textSub}
-        />
-      </View>
+    <>
+      <LocationOffModal visible={showGpsModal} t={t} />
 
-      <View style={locStyles.textWrap}>
-        {loc.status === 'loading' && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <ActivityIndicator size="small" color={t.primary} />
-            <Text style={[locStyles.sub, { color: t.textSub }]}>Mendeteksi lokasi...</Text>
-          </View>
-        )}
-        {loc.status === 'denied' && (
-          <>
-            <Text style={[locStyles.main, { color: t.text }]}>Izin lokasi belum diberikan</Text>
-            <Text style={[locStyles.sub, { color: t.textSub }]}>Ketuk untuk coba lagi</Text>
-          </>
-        )}
-        {loc.status === 'error' && (
-          <>
-            <Text style={[locStyles.main, { color: t.text }]}>Gagal mendeteksi lokasi</Text>
-            <Text style={[locStyles.sub, { color: t.textSub }]}>Ketuk untuk coba lagi</Text>
-          </>
-        )}
-        {loc.status === 'ok' && (
-          <>
-            <Text style={[locStyles.label, { color: t.textSub }]}>Kamu berada di</Text>
-            <Text style={[locStyles.main, { color: t.text }]} numberOfLines={1}>{loc.kecamatan}</Text>
-            {loc.kota && (
-              <Text style={[locStyles.sub, { color: t.textSub }]} numberOfLines={1}>{loc.kota}</Text>
-            )}
-          </>
-        )}
-      </View>
-
-      {loc.status === 'ok' ? (
-        <View style={[locStyles.chip, { backgroundColor: t.primaryMuted }]}>
-          <Ionicons name="checkmark-circle-outline" size={12} color={t.primary} />
-          <Text style={[locStyles.chipText, { color: t.primary }]}>Terdeteksi</Text>
+      <TouchableOpacity
+        activeOpacity={isInteractive ? 0.75 : 1}
+        onPress={isInteractive ? refetch : undefined}
+        style={[locStyles.banner, { backgroundColor: t.surface, borderColor: t.border }]}
+      >
+        <View style={[locStyles.pinBox, { backgroundColor: t.primaryMuted }]}>
+          <Ionicons
+            name={
+              loc.status === 'ok' ? 'location'
+              : loc.status === 'location_off' ? 'location-off-outline'
+              : 'location-outline'
+            }
+            size={18}
+            color={loc.status === 'ok' ? t.primary : t.textSub}
+          />
         </View>
-      ) : loc.status !== 'loading' ? (
-        <Ionicons name="refresh-outline" size={18} color={t.textSub} />
-      ) : null}
-    </TouchableOpacity>
+
+        <View style={locStyles.textWrap}>
+          {loc.status === 'idle' || loc.status === 'loading' ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ActivityIndicator size="small" color={t.primary} />
+              <Text style={[locStyles.sub, { color: t.textSub }]}>Mendeteksi lokasi...</Text>
+            </View>
+          ) : loc.status === 'denied' ? (
+            <>
+              <Text style={[locStyles.main, { color: t.text }]}>Izin lokasi belum diberikan</Text>
+              <Text style={[locStyles.sub, { color: t.textSub }]}>Ketuk untuk coba lagi</Text>
+            </>
+          ) : loc.status === 'location_off' ? (
+            <>
+              <Text style={[locStyles.main, { color: t.text }]}>Lokasi dimatikan</Text>
+              <Text style={[locStyles.sub, { color: t.textSub }]}>Nyalakan GPS untuk melanjutkan</Text>
+            </>
+          ) : loc.status === 'error' ? (
+            <>
+              <Text style={[locStyles.main, { color: t.text }]}>Gagal mendeteksi lokasi</Text>
+              <Text style={[locStyles.sub, { color: t.textSub }]}>Ketuk untuk coba lagi</Text>
+            </>
+          ) : (
+            <>
+              <Text style={[locStyles.label, { color: t.textSub }]}>Kamu berada di</Text>
+              <Text style={[locStyles.main, { color: t.text }]} numberOfLines={1}>{loc.kecamatan}</Text>
+              {loc.kota && (
+                <Text style={[locStyles.sub, { color: t.textSub }]} numberOfLines={1}>{loc.kota}</Text>
+              )}
+            </>
+          )}
+        </View>
+
+        {loc.status === 'ok' ? (
+          <View style={[locStyles.chip, { backgroundColor: t.primaryMuted }]}>
+            <Ionicons name="checkmark-circle-outline" size={12} color={t.primary} />
+            <Text style={[locStyles.chipText, { color: t.primary }]}>Terdeteksi</Text>
+          </View>
+        ) : loc.status === 'location_off' ? (
+          <Ionicons name="chevron-forward-outline" size={16} color={t.textSub} />
+        ) : loc.status !== 'loading' && loc.status !== 'idle' ? (
+          <Ionicons name="refresh-outline" size={18} color={t.textSub} />
+        ) : null}
+      </TouchableOpacity>
+    </>
   );
 }
 
@@ -221,7 +358,7 @@ const adStyles = StyleSheet.create({
   dot:         { height:6, borderRadius:3 },
 });
 
-// ─── Konstanta lainnya ────────────────────────────────────────────────────────
+// ─── Konstanta ────────────────────────────────────────────────────────────────
 const PROMOS = [
   { id:'1', title:'Gratis Ongkir',        sub:'Min. belanja Rp 50.000'  },
   { id:'2', title:'Diskon 20% Pagi Hari', sub:'Pesan sebelum jam 07.00' },
