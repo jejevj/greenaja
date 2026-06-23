@@ -17,28 +17,28 @@ import { useApp } from '../../context/AppContext';
 
 const { width } = Dimensions.get('window');
 
-// ─── Tipe lokasi ────────────────────────────────────────────────────────────
+// ─── Tipe lokasi ──────────────────────────────────────────────────────────────
 type LocationState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'denied' }
   | { status: 'error' }
-  | { status: 'ok'; kecamatan: string; kelurahan?: string; kota?: string };
+  | { status: 'ok'; kecamatan: string; kota?: string };
 
-// ─── Hook lokasi + Nominatim reverse geocoding ───────────────────────────────
+// ─── Hook lokasi: langsung cek status izin (TIDAK minta ulang — sudah diminta di _layout) ─
 function useKecamatan() {
   const [loc, setLoc] = useState<LocationState>({ status: 'idle' });
 
-  const fetch = async () => {
+  const resolve = async () => {
     setLoc({ status: 'loading' });
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      // Cek status izin — tidak meminta ulang
+      const { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted') { setLoc({ status: 'denied' }); return; }
 
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const { latitude, longitude } = pos.coords;
 
-      // Nominatim – gratis, tanpa API key. Wajib kirim User-Agent sesuai kebijakan OSM.
       const res = await global.fetch(
         `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
         { headers: { 'Accept-Language': 'id', 'User-Agent': 'GreenAjaApp/1.0 (com.greenaja.app)' } }
@@ -46,22 +46,15 @@ function useKecamatan() {
       const data = await res.json();
       const addr = data?.address ?? {};
 
-      // Nominatim mengembalikan kecamatan di suburb / city_district / quarter / village
       const kecamatan =
-        addr.suburb ??
-        addr.city_district ??
-        addr.quarter ??
-        addr.village ??
-        addr.town ??
-        addr.county ??
-        null;
+        addr.suburb ?? addr.city_district ?? addr.quarter ??
+        addr.village ?? addr.town ?? addr.county ?? null;
 
       if (!kecamatan) { setLoc({ status: 'error' }); return; }
 
       setLoc({
         status: 'ok',
         kecamatan,
-        kelurahan: addr.neighbourhood ?? addr.hamlet ?? undefined,
         kota: addr.city ?? addr.regency ?? addr.state ?? undefined,
       });
     } catch {
@@ -69,11 +62,16 @@ function useKecamatan() {
     }
   };
 
-  useEffect(() => { fetch(); }, []);
-  return { loc, refetch: fetch };
+  // Jalankan setelah _layout selesai request izin (delay kecil)
+  useEffect(() => {
+    const t = setTimeout(resolve, 600);
+    return () => clearTimeout(t);
+  }, []);
+
+  return { loc, refetch: resolve };
 }
 
-// ─── Komponen banner lokasi ──────────────────────────────────────────────────
+// ─── Komponen banner lokasi ───────────────────────────────────────────────────
 function LocationBanner({ t }: { t: typeof LIGHT }) {
   const { loc, refetch } = useKecamatan();
 
@@ -85,16 +83,14 @@ function LocationBanner({ t }: { t: typeof LIGHT }) {
       onPress={loc.status !== 'ok' && loc.status !== 'loading' ? refetch : undefined}
       style={[locStyles.banner, { backgroundColor: t.surface, borderColor: t.border }]}
     >
-      {/* Ikon pin */}
       <View style={[locStyles.pinBox, { backgroundColor: t.primaryMuted }]}>
         <Ionicons
-          name={loc.status === 'denied' ? 'location-outline' : 'location'}
+          name={loc.status === 'ok' ? 'location' : 'location-outline'}
           size={18}
-          color={loc.status === 'denied' || loc.status === 'error' ? t.textSub : t.primary}
+          color={loc.status === 'ok' ? t.primary : t.textSub}
         />
       </View>
 
-      {/* Teks */}
       <View style={locStyles.textWrap}>
         {loc.status === 'loading' && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -104,7 +100,7 @@ function LocationBanner({ t }: { t: typeof LIGHT }) {
         )}
         {loc.status === 'denied' && (
           <>
-            <Text style={[locStyles.main, { color: t.text }]}>Izin lokasi ditolak</Text>
+            <Text style={[locStyles.main, { color: t.text }]}>Izin lokasi belum diberikan</Text>
             <Text style={[locStyles.sub, { color: t.textSub }]}>Ketuk untuk coba lagi</Text>
           </>
         )}
@@ -117,19 +113,14 @@ function LocationBanner({ t }: { t: typeof LIGHT }) {
         {loc.status === 'ok' && (
           <>
             <Text style={[locStyles.label, { color: t.textSub }]}>Kamu berada di</Text>
-            <Text style={[locStyles.main, { color: t.text }]} numberOfLines={1}>
-              {loc.kecamatan}
-            </Text>
+            <Text style={[locStyles.main, { color: t.text }]} numberOfLines={1}>{loc.kecamatan}</Text>
             {loc.kota && (
-              <Text style={[locStyles.sub, { color: t.textSub }]} numberOfLines={1}>
-                {loc.kota}
-              </Text>
+              <Text style={[locStyles.sub, { color: t.textSub }]} numberOfLines={1}>{loc.kota}</Text>
             )}
           </>
         )}
       </View>
 
-      {/* Chip status / tombol refresh */}
       {loc.status === 'ok' ? (
         <View style={[locStyles.chip, { backgroundColor: t.primaryMuted }]}>
           <Ionicons name="checkmark-circle-outline" size={12} color={t.primary} />
@@ -143,12 +134,7 @@ function LocationBanner({ t }: { t: typeof LIGHT }) {
 }
 
 const locStyles = StyleSheet.create({
-  banner:   {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    marginHorizontal: 20, marginBottom: 16,
-    borderRadius: 14, borderWidth: 1,
-    paddingHorizontal: 14, paddingVertical: 12,
-  },
+  banner:   { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 20, marginBottom: 16, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12 },
   pinBox:   { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   textWrap: { flex: 1 },
   label:    { fontSize: 10, fontWeight: '500', marginBottom: 1 },
@@ -158,7 +144,7 @@ const locStyles = StyleSheet.create({
   chipText: { fontSize: 10, fontWeight: '700' },
 });
 
-// ─── Ads slideshow ───────────────────────────────────────────────────────────
+// ─── Ads slideshow ────────────────────────────────────────────────────────────
 const ADS = [
   { id:'1', title:'Sayur Segar Tiap Pagi',    sub:'Langsung dari kebun ke meja makanmu',        icon:'leaf-outline'             as const, colors:['#1A7A4A','#2A9960'] as [string,string] },
   { id:'2', title:'Gratis Ongkir Hari Ini!',  sub:'Untuk pembelian pertamamu, tanpa minimum',   icon:'bicycle-outline'          as const, colors:['#0D6E8A','#1A9DBF'] as [string,string] },
@@ -235,7 +221,7 @@ const adStyles = StyleSheet.create({
   dot:         { height:6, borderRadius:3 },
 });
 
-// ─── Konstanta lainnya ───────────────────────────────────────────────────────
+// ─── Konstanta lainnya ────────────────────────────────────────────────────────
 const PROMOS = [
   { id:'1', title:'Gratis Ongkir',        sub:'Min. belanja Rp 50.000'  },
   { id:'2', title:'Diskon 20% Pagi Hari', sub:'Pesan sebelum jam 07.00' },
@@ -252,7 +238,7 @@ const CATEGORIES = [
 
 type CartEntry = { productId: string; variantId: string; qty: number };
 
-// ─── HomeScreen ──────────────────────────────────────────────────────────────
+// ─── HomeScreen ───────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const { profileBadgeCount, profileBadgeAlert } = useApp();
@@ -345,10 +331,9 @@ export default function HomeScreen() {
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         scrollEventThrottle={16}
       >
-        {/* Ads */}
         <View style={{ marginTop: 16 }}><AdSlideshow t={t} /></View>
 
-        {/* Promo banner horizontal */}
+        {/* Promo horizontal */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.promoList}>
           {PROMOS.map(p => (
             <TouchableOpacity key={p.id} activeOpacity={0.82}>
@@ -361,7 +346,7 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        {/* ── BANNER LOKASI KECAMATAN ── */}
+        {/* ── Banner Lokasi Kecamatan ── */}
         <LocationBanner t={t} />
 
         {/* Kategori chips */}
@@ -449,7 +434,6 @@ export default function HomeScreen() {
         </ScrollView>
       </Animated.ScrollView>
 
-      {/* Float cart button */}
       {cartCount > 0 && (
         <TouchableOpacity style={styles.floatCartOuter} onPress={() => router.push('/(tabs)/cart')} activeOpacity={0.9}>
           <LinearGradient colors={['#1A7A4A','#2A9960']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.floatCartInner}>
@@ -470,7 +454,7 @@ export default function HomeScreen() {
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safe:              { flex:1 },
   stickyHeader:      { zIndex:10, shadowColor:'#000', shadowOffset:{width:0,height:2}, paddingBottom:12 },
