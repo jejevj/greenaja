@@ -3,11 +3,13 @@ import {
   ScrollView, StyleSheet, View, Text,
   TouchableOpacity, useColorScheme, Dimensions,
   FlatList, Animated, NativeScrollEvent, NativeSyntheticEvent,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as Location from 'expo-location';
 import { LIGHT, DARK } from '../../constants/Theme';
 import ProductBottomSheet, { ProductSheetItem } from '../../components/ProductBottomSheet';
 import { ALL_PRODUCTS } from './products';
@@ -15,6 +17,148 @@ import { useApp } from '../../context/AppContext';
 
 const { width } = Dimensions.get('window');
 
+// ─── Tipe lokasi ────────────────────────────────────────────────────────────
+type LocationState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'denied' }
+  | { status: 'error' }
+  | { status: 'ok'; kecamatan: string; kelurahan?: string; kota?: string };
+
+// ─── Hook lokasi + Nominatim reverse geocoding ───────────────────────────────
+function useKecamatan() {
+  const [loc, setLoc] = useState<LocationState>({ status: 'idle' });
+
+  const fetch = async () => {
+    setLoc({ status: 'loading' });
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') { setLoc({ status: 'denied' }); return; }
+
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const { latitude, longitude } = pos.coords;
+
+      // Nominatim – gratis, tanpa API key. Wajib kirim User-Agent sesuai kebijakan OSM.
+      const res = await global.fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
+        { headers: { 'Accept-Language': 'id', 'User-Agent': 'GreenAjaApp/1.0 (com.greenaja.app)' } }
+      );
+      const data = await res.json();
+      const addr = data?.address ?? {};
+
+      // Nominatim mengembalikan kecamatan di suburb / city_district / quarter / village
+      const kecamatan =
+        addr.suburb ??
+        addr.city_district ??
+        addr.quarter ??
+        addr.village ??
+        addr.town ??
+        addr.county ??
+        null;
+
+      if (!kecamatan) { setLoc({ status: 'error' }); return; }
+
+      setLoc({
+        status: 'ok',
+        kecamatan,
+        kelurahan: addr.neighbourhood ?? addr.hamlet ?? undefined,
+        kota: addr.city ?? addr.regency ?? addr.state ?? undefined,
+      });
+    } catch {
+      setLoc({ status: 'error' });
+    }
+  };
+
+  useEffect(() => { fetch(); }, []);
+  return { loc, refetch: fetch };
+}
+
+// ─── Komponen banner lokasi ──────────────────────────────────────────────────
+function LocationBanner({ t }: { t: typeof LIGHT }) {
+  const { loc, refetch } = useKecamatan();
+
+  if (loc.status === 'idle') return null;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={loc.status === 'ok' ? 1 : 0.75}
+      onPress={loc.status !== 'ok' && loc.status !== 'loading' ? refetch : undefined}
+      style={[locStyles.banner, { backgroundColor: t.surface, borderColor: t.border }]}
+    >
+      {/* Ikon pin */}
+      <View style={[locStyles.pinBox, { backgroundColor: t.primaryMuted }]}>
+        <Ionicons
+          name={loc.status === 'denied' ? 'location-outline' : 'location'}
+          size={18}
+          color={loc.status === 'denied' || loc.status === 'error' ? t.textSub : t.primary}
+        />
+      </View>
+
+      {/* Teks */}
+      <View style={locStyles.textWrap}>
+        {loc.status === 'loading' && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <ActivityIndicator size="small" color={t.primary} />
+            <Text style={[locStyles.sub, { color: t.textSub }]}>Mendeteksi lokasi...</Text>
+          </View>
+        )}
+        {loc.status === 'denied' && (
+          <>
+            <Text style={[locStyles.main, { color: t.text }]}>Izin lokasi ditolak</Text>
+            <Text style={[locStyles.sub, { color: t.textSub }]}>Ketuk untuk coba lagi</Text>
+          </>
+        )}
+        {loc.status === 'error' && (
+          <>
+            <Text style={[locStyles.main, { color: t.text }]}>Gagal mendeteksi lokasi</Text>
+            <Text style={[locStyles.sub, { color: t.textSub }]}>Ketuk untuk coba lagi</Text>
+          </>
+        )}
+        {loc.status === 'ok' && (
+          <>
+            <Text style={[locStyles.label, { color: t.textSub }]}>Kamu berada di</Text>
+            <Text style={[locStyles.main, { color: t.text }]} numberOfLines={1}>
+              {loc.kecamatan}
+            </Text>
+            {loc.kota && (
+              <Text style={[locStyles.sub, { color: t.textSub }]} numberOfLines={1}>
+                {loc.kota}
+              </Text>
+            )}
+          </>
+        )}
+      </View>
+
+      {/* Chip status / tombol refresh */}
+      {loc.status === 'ok' ? (
+        <View style={[locStyles.chip, { backgroundColor: t.primaryMuted }]}>
+          <Ionicons name="checkmark-circle-outline" size={12} color={t.primary} />
+          <Text style={[locStyles.chipText, { color: t.primary }]}>Terdeteksi</Text>
+        </View>
+      ) : loc.status !== 'loading' ? (
+        <Ionicons name="refresh-outline" size={18} color={t.textSub} />
+      ) : null}
+    </TouchableOpacity>
+  );
+}
+
+const locStyles = StyleSheet.create({
+  banner:   {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    marginHorizontal: 20, marginBottom: 16,
+    borderRadius: 14, borderWidth: 1,
+    paddingHorizontal: 14, paddingVertical: 12,
+  },
+  pinBox:   { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  textWrap: { flex: 1 },
+  label:    { fontSize: 10, fontWeight: '500', marginBottom: 1 },
+  main:     { fontSize: 14, fontWeight: '700' },
+  sub:      { fontSize: 11, marginTop: 1 },
+  chip:     { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20 },
+  chipText: { fontSize: 10, fontWeight: '700' },
+});
+
+// ─── Ads slideshow ───────────────────────────────────────────────────────────
 const ADS = [
   { id:'1', title:'Sayur Segar Tiap Pagi',    sub:'Langsung dari kebun ke meja makanmu',        icon:'leaf-outline'             as const, colors:['#1A7A4A','#2A9960'] as [string,string] },
   { id:'2', title:'Gratis Ongkir Hari Ini!',  sub:'Untuk pembelian pertamamu, tanpa minimum',   icon:'bicycle-outline'          as const, colors:['#0D6E8A','#1A9DBF'] as [string,string] },
@@ -91,6 +235,7 @@ const adStyles = StyleSheet.create({
   dot:         { height:6, borderRadius:3 },
 });
 
+// ─── Konstanta lainnya ───────────────────────────────────────────────────────
 const PROMOS = [
   { id:'1', title:'Gratis Ongkir',        sub:'Min. belanja Rp 50.000'  },
   { id:'2', title:'Diskon 20% Pagi Hari', sub:'Pesan sebelum jam 07.00' },
@@ -107,6 +252,7 @@ const CATEGORIES = [
 
 type CartEntry = { productId: string; variantId: string; qty: number };
 
+// ─── HomeScreen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const t = useColorScheme() === 'dark' ? DARK : LIGHT;
   const { profileBadgeCount, profileBadgeAlert } = useApp();
@@ -132,9 +278,8 @@ export default function HomeScreen() {
   const inCart   = (id: string) => cart.some(e => e.productId===id);
   const PRODUCTS = ALL_PRODUCTS.slice(0, 6);
 
-  // Hitung warna badge profil
-  const showProfileBadge = profileBadgeAlert || profileBadgeCount > 0;
-  const profileBadgeBg   = profileBadgeAlert ? '#EF4444' : t.primary;
+  const showProfileBadge  = profileBadgeAlert || profileBadgeCount > 0;
+  const profileBadgeBg    = profileBadgeAlert ? '#EF4444' : t.primary;
   const profileBadgeLabel = profileBadgeAlert ? '!' : String(profileBadgeCount > 9 ? '9+' : profileBadgeCount);
 
   return (
@@ -158,7 +303,6 @@ export default function HomeScreen() {
             <Text style={[styles.topTitle,  { color: t.text    }]}>GreenAja Market</Text>
           </View>
           <View style={styles.topActions}>
-            {/* Icon keranjang */}
             <TouchableOpacity
               style={[styles.iconBtn, { backgroundColor: t.surface, borderColor: t.border }]}
               onPress={() => router.push('/(tabs)/cart')}
@@ -170,8 +314,6 @@ export default function HomeScreen() {
                 </View>
               )}
             </TouchableOpacity>
-
-            {/* Icon profil + badge */}
             <TouchableOpacity
               style={[styles.iconBtn, { backgroundColor: t.surface, borderColor: t.border }]}
               onPress={() => router.push('/(tabs)/profile')}
@@ -203,8 +345,10 @@ export default function HomeScreen() {
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         scrollEventThrottle={16}
       >
+        {/* Ads */}
         <View style={{ marginTop: 16 }}><AdSlideshow t={t} /></View>
 
+        {/* Promo banner horizontal */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.promoList}>
           {PROMOS.map(p => (
             <TouchableOpacity key={p.id} activeOpacity={0.82}>
@@ -217,6 +361,10 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
+        {/* ── BANNER LOKASI KECAMATAN ── */}
+        <LocationBanner t={t} />
+
+        {/* Kategori chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catList}>
           {CATEGORIES.map(c => {
             const active = activeCategory === c.id;
@@ -235,6 +383,7 @@ export default function HomeScreen() {
           })}
         </ScrollView>
 
+        {/* Produk Segar */}
         <View style={styles.sectionRow}>
           <Text style={[styles.sectionTitle, { color: t.text }]}>Produk Segar</Text>
           <TouchableOpacity onPress={() => router.push('/(tabs)/products')} style={styles.seeAllBtn}>
@@ -280,6 +429,7 @@ export default function HomeScreen() {
           })}
         </View>
 
+        {/* Untukmu Hari Ini */}
         <View style={styles.sectionRow}>
           <Text style={[styles.sectionTitle, { color: t.text }]}>Untukmu Hari Ini</Text>
         </View>
@@ -299,6 +449,7 @@ export default function HomeScreen() {
         </ScrollView>
       </Animated.ScrollView>
 
+      {/* Float cart button */}
       {cartCount > 0 && (
         <TouchableOpacity style={styles.floatCartOuter} onPress={() => router.push('/(tabs)/cart')} activeOpacity={0.9}>
           <LinearGradient colors={['#1A7A4A','#2A9960']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.floatCartInner}>
@@ -319,49 +470,50 @@ export default function HomeScreen() {
   );
 }
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safe:           { flex:1 },
-  stickyHeader:   { zIndex:10, shadowColor:'#000', shadowOffset:{width:0,height:2}, paddingBottom:12 },
-  topBar:         { flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingHorizontal:20, paddingTop:12, paddingBottom:12 },
-  greeting:       { fontSize:12, marginBottom:2 },
-  topTitle:       { fontSize:20, fontWeight:'800', letterSpacing:-0.3 },
-  topActions:     { flexDirection:'row', gap:8 },
-  iconBtn:        { width:40, height:40, borderRadius:12, borderWidth:1, alignItems:'center', justifyContent:'center' },
-  badge:          { position:'absolute', top:-4, right:-4, minWidth:17, height:17, borderRadius:9, alignItems:'center', justifyContent:'center', paddingHorizontal:3 },
-  badgeText:      { fontSize:9, color:'#fff', fontWeight:'800' },
-  searchBarFake:  { flexDirection:'row', alignItems:'center', marginHorizontal:20, borderRadius:14, borderWidth:1.5, paddingHorizontal:14, height:48, gap:10 },
+  safe:              { flex:1 },
+  stickyHeader:      { zIndex:10, shadowColor:'#000', shadowOffset:{width:0,height:2}, paddingBottom:12 },
+  topBar:            { flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingHorizontal:20, paddingTop:12, paddingBottom:12 },
+  greeting:          { fontSize:12, marginBottom:2 },
+  topTitle:          { fontSize:20, fontWeight:'800', letterSpacing:-0.3 },
+  topActions:        { flexDirection:'row', gap:8 },
+  iconBtn:           { width:40, height:40, borderRadius:12, borderWidth:1, alignItems:'center', justifyContent:'center' },
+  badge:             { position:'absolute', top:-4, right:-4, minWidth:17, height:17, borderRadius:9, alignItems:'center', justifyContent:'center', paddingHorizontal:3 },
+  badgeText:         { fontSize:9, color:'#fff', fontWeight:'800' },
+  searchBarFake:     { flexDirection:'row', alignItems:'center', marginHorizontal:20, borderRadius:14, borderWidth:1.5, paddingHorizontal:14, height:48, gap:10 },
   searchPlaceholder: { flex:1, fontSize:14 },
-  promoList:      { paddingHorizontal:20, gap:12, marginBottom:20 },
-  promoBanner:    { width:width*0.68, borderRadius:16, padding:18 },
-  promoTitle:     { fontSize:15, fontWeight:'700', color:'#fff', marginBottom:4 },
-  promoSub:       { fontSize:12, color:'rgba(255,255,255,0.72)' },
-  catList:        { paddingHorizontal:20, gap:8, marginBottom:20 },
-  chip:           { flexDirection:'row', alignItems:'center', gap:6, paddingHorizontal:14, paddingVertical:8, borderRadius:24, borderWidth:1 },
-  chipText:       { fontSize:13, fontWeight:'600' },
-  sectionRow:     { flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingHorizontal:20, marginBottom:14 },
-  sectionTitle:   { fontSize:16, fontWeight:'700' },
-  seeAllBtn:      { flexDirection:'row', alignItems:'center', gap:2 },
-  seeAllText:     { fontSize:13, fontWeight:'600' },
-  grid:           { flexDirection:'row', flexWrap:'wrap', paddingHorizontal:16, gap:12, marginBottom:28 },
-  productCard:    { width:(width-44)/2, borderRadius:16, borderWidth:1, overflow:'hidden' },
-  productImgBox:  { height:100, alignItems:'center', justifyContent:'center' },
-  productTagBox:  { position:'absolute', top:10, left:10, paddingHorizontal:8, paddingVertical:3, borderRadius:20 },
-  productTagText: { fontSize:10, fontWeight:'700' },
-  productBody:    { padding:12 },
-  productName:    { fontSize:14, fontWeight:'700', marginBottom:2 },
-  productFarm:    { fontSize:11, marginBottom:10 },
-  productFooter:  { flexDirection:'row', justifyContent:'space-between', alignItems:'flex-end' },
-  productPrice:   { fontSize:14, fontWeight:'800' },
-  productUnit:    { fontSize:11 },
-  addBtn:         { width:36, height:36, borderRadius:10, borderWidth:1.5, alignItems:'center', justifyContent:'center' },
-  recList:        { paddingHorizontal:20, gap:12, marginBottom:24 },
-  recCard:        { width:120, borderRadius:16, borderWidth:1, padding:14, alignItems:'center', gap:8 },
-  recImg:         { width:52, height:52, borderRadius:14, alignItems:'center', justifyContent:'center' },
-  recName:        { fontSize:12, fontWeight:'600', textAlign:'center' },
-  recPrice:       { fontSize:13, fontWeight:'700' },
-  floatCartOuter: { position:'absolute', bottom:20, left:20, right:20, borderRadius:16, overflow:'hidden', elevation:6, shadowColor:'#1A7A4A', shadowOpacity:0.25, shadowRadius:12 },
-  floatCartInner: { flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingVertical:15, paddingHorizontal:20 },
-  floatLeft:      { flexDirection:'row', alignItems:'center', gap:8 },
-  floatRight:     { flexDirection:'row', alignItems:'center', gap:6 },
-  floatText:      { fontSize:14, fontWeight:'600', color:'#fff' },
+  promoList:         { paddingHorizontal:20, gap:12, marginBottom:20 },
+  promoBanner:       { width:width*0.68, borderRadius:16, padding:18 },
+  promoTitle:        { fontSize:15, fontWeight:'700', color:'#fff', marginBottom:4 },
+  promoSub:          { fontSize:12, color:'rgba(255,255,255,0.72)' },
+  catList:           { paddingHorizontal:20, gap:8, marginBottom:20 },
+  chip:              { flexDirection:'row', alignItems:'center', gap:6, paddingHorizontal:14, paddingVertical:8, borderRadius:24, borderWidth:1 },
+  chipText:          { fontSize:13, fontWeight:'600' },
+  sectionRow:        { flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingHorizontal:20, marginBottom:14 },
+  sectionTitle:      { fontSize:16, fontWeight:'700' },
+  seeAllBtn:         { flexDirection:'row', alignItems:'center', gap:2 },
+  seeAllText:        { fontSize:13, fontWeight:'600' },
+  grid:              { flexDirection:'row', flexWrap:'wrap', paddingHorizontal:16, gap:12, marginBottom:28 },
+  productCard:       { width:(width-44)/2, borderRadius:16, borderWidth:1, overflow:'hidden' },
+  productImgBox:     { height:100, alignItems:'center', justifyContent:'center' },
+  productTagBox:     { position:'absolute', top:10, left:10, paddingHorizontal:8, paddingVertical:3, borderRadius:20 },
+  productTagText:    { fontSize:10, fontWeight:'700' },
+  productBody:       { padding:12 },
+  productName:       { fontSize:14, fontWeight:'700', marginBottom:2 },
+  productFarm:       { fontSize:11, marginBottom:10 },
+  productFooter:     { flexDirection:'row', justifyContent:'space-between', alignItems:'flex-end' },
+  productPrice:      { fontSize:14, fontWeight:'800' },
+  productUnit:       { fontSize:11 },
+  addBtn:            { width:36, height:36, borderRadius:10, borderWidth:1.5, alignItems:'center', justifyContent:'center' },
+  recList:           { paddingHorizontal:20, gap:12, marginBottom:24 },
+  recCard:           { width:120, borderRadius:16, borderWidth:1, padding:14, alignItems:'center', gap:8 },
+  recImg:            { width:52, height:52, borderRadius:14, alignItems:'center', justifyContent:'center' },
+  recName:           { fontSize:12, fontWeight:'600', textAlign:'center' },
+  recPrice:          { fontSize:13, fontWeight:'700' },
+  floatCartOuter:    { position:'absolute', bottom:20, left:20, right:20, borderRadius:16, overflow:'hidden', elevation:6, shadowColor:'#1A7A4A', shadowOpacity:0.25, shadowRadius:12 },
+  floatCartInner:    { flexDirection:'row', justifyContent:'space-between', alignItems:'center', paddingVertical:15, paddingHorizontal:20 },
+  floatLeft:         { flexDirection:'row', alignItems:'center', gap:8 },
+  floatRight:        { flexDirection:'row', alignItems:'center', gap:6 },
+  floatText:         { fontSize:14, fontWeight:'600', color:'#fff' },
 });
