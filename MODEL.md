@@ -2,6 +2,7 @@
 
 > Dokumen ini mendefinisikan semua entiti yang teridentifikasi dari UI mobile GreenAja.
 > Dijadikan referensi sebelum implementasi database (backend).
+> Update: entiti Farm dihapus — semua produk dijual langsung oleh GreenAja.
 
 ---
 
@@ -56,17 +57,18 @@ Alamat pengiriman milik User. Bisa punya lebih dari satu.
 
 ## 3. Product
 
-Produk pertanian yang dijual di GreenAja.
+Produk pertanian yang dijual langsung oleh GreenAja.
 
 | Field | Tipe | Keterangan |
 |---|---|---|
 | `id` | UUID | |
 | `name` | string | Nama produk |
 | `description` | string | Deskripsi panjang |
-| `tag` | string | Label singkat: "Bestseller", "Organik", "Baru" |
+| `tag` | string | Label singkat: "Bestseller", "Organik", "Baru", "Populer", "Segar", "Lokal" |
 | `category` | enum | `Sayuran`, `Buah`, `Rempah`, `Organik`, `Lokal` |
-| `farm_id` | UUID | FK → Farm |
 | `image_url` | string\|null | |
+| `rating` | float | Rata-rata rating dari Review |
+| `sold_count` | integer | Total terjual |
 | `is_active` | boolean | Produk tersedia atau tidak |
 | `created_at` | timestamp | |
 | `updated_at` | timestamp | |
@@ -92,25 +94,7 @@ Setiap produk punya beberapa varian (ukuran/berat/satuan).
 
 ---
 
-## 5. Farm
-
-Kebun/petani pemilik produk.
-
-| Field | Tipe | Keterangan |
-|---|---|---|
-| `id` | UUID | |
-| `name` | string | Nama kebun, contoh: "Kebun Pak Budi" |
-| `owner_name` | string | Nama petani |
-| `kecamatan` | string | |
-| `kabupaten` | string | |
-| `provinsi` | string | |
-| `description` | string\|null | |
-| `image_url` | string\|null | |
-| `created_at` | timestamp | |
-
----
-
-## 6. Cart
+## 5. Cart
 
 Item yang ditambahkan User ke keranjang sebelum checkout.
 
@@ -127,7 +111,7 @@ Item yang ditambahkan User ke keranjang sebelum checkout.
 
 ---
 
-## 7. Order
+## 6. Order
 
 Pesanan yang sudah di-checkout oleh User.
 
@@ -155,7 +139,7 @@ Pesanan yang sudah di-checkout oleh User.
 
 ---
 
-## 8. OrderItem
+## 7. OrderItem
 
 Detail produk dalam satu Order.
 
@@ -175,7 +159,7 @@ Detail produk dalam satu Order.
 
 ---
 
-## 9. Voucher
+## 8. Voucher
 
 Kode promo yang bisa dipakai saat checkout.
 
@@ -196,7 +180,7 @@ Kode promo yang bisa dipakai saat checkout.
 
 ---
 
-## 10. Review
+## 9. Review
 
 Ulasan produk yang ditulis User setelah pesanan selesai.
 
@@ -215,7 +199,7 @@ Ulasan produk yang ditulis User setelah pesanan selesai.
 
 ---
 
-## 11. Notification
+## 10. Notification
 
 Notifikasi push/in-app untuk User.
 
@@ -232,7 +216,7 @@ Notifikasi push/in-app untuk User.
 
 ---
 
-## 12. UserSettings
+## 11. UserSettings
 
 Preferensi dan pengaturan akun User (dari screen Settings).
 
@@ -259,10 +243,9 @@ Order >── Address
 User ──< Review >── Product
 User ──< Notification
 User ──1 UserSettings
-Product >── Farm
 Product ──< ProductVariant
 ```
 
 ---
 
-> **Catatan:** Model ini masih draft berdasarkan UI. Silakan review dan tambahkan field yang mungkin terlewat sebelum implementasi.
+> **Catatan:** Model ini masih draft. Silakan review dan tambahkan field yang mungkin terlewat sebelum implementasi.

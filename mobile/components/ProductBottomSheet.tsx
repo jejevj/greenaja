@@ -16,7 +16,7 @@ export type Variant = { id: string; label: string; price: number; unit: string; 
 export type ProductSheetItem = {
   id: string;
   name: string;
-  farm: string;
+  seller: string;
   tag: string;
   description: string;
   variants: Variant[];
@@ -24,12 +24,12 @@ export type ProductSheetItem = {
 
 type Review = {
   id: string;
-  name: string;       // nama asli — akan disensor saat render
+  name: string;
   rating: number;
   date: string;
   note: string;
   variant: string;
-  photo?: boolean;    // placeholder: apakah ada foto
+  photo?: boolean;
 };
 
 // ── Dummy reviews per productId ────────────────────────────────────────────
@@ -51,7 +51,7 @@ const REVIEWS: Record<string, Review[]> = {
   ],
   '4': [
     { id: 'r1', name: 'Darmawan',      rating: 5, date: '21 Jun 2026', note: 'Kangkungnya hijau segar, batang renyah banget. Pas buat tumis!', variant: '1 Ikat' },
-    { id: 'r2', name: 'Nurul Hidayah', rating: 5, date: '16 Jun 2026', note: 'Langganan tiap minggu, kualitasnya stabil. Petaninya keren!', variant: '3 Ikat', photo: true },
+    { id: 'r2', name: 'Nurul Hidayah', rating: 5, date: '16 Jun 2026', note: 'Langganan tiap minggu, kualitasnya stabil. Terima kasih GreenAja!', variant: '3 Ikat', photo: true },
     { id: 'r3', name: 'Eko Setiawan',  rating: 4, date: '11 Jun 2026', note: 'Enak dan segar, tapi daun agak sedikit lebih kuning dari biasanya.', variant: '1 Ikat' },
   ],
   '5': [
@@ -65,7 +65,6 @@ const REVIEWS: Record<string, Review[]> = {
   ],
 };
 
-// ── Sensor nama: "Ari Santoso" → "A*i S******" ───────────────────────────────
 function censorName(name: string): string {
   return name
     .split(' ')
@@ -77,7 +76,6 @@ function censorName(name: string): string {
     .join(' ');
 }
 
-// ── Star display component ────────────────────────────────────────────────────
 function Stars({ rating, size = 12 }: { rating: number; size?: number }) {
   return (
     <View style={{ flexDirection: 'row', gap: 2 }}>
@@ -143,7 +141,6 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
     : 0;
   const visibleReviews = showAllReviews ? reviews : reviews.slice(0, 2);
 
-  // rating distribution (1–5 star count)
   const dist = [5,4,3,2,1].map(star => ({
     star,
     count: reviews.filter(r => r.rating === star).length,
@@ -185,7 +182,6 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
           { backgroundColor: t.bg, height: SHEET_H, transform: [{ translateY: slideAnim }] },
         ]}
       >
-        {/* Drag handle */}
         <View style={styles.handleWrap}>
           <View style={[styles.handle, { backgroundColor: t.border }]} />
         </View>
@@ -207,11 +203,13 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
 
           <View style={styles.productMeta}>
             <Text style={[styles.productName, { color: t.text }]}>{product.name}</Text>
-            <View style={styles.farmRow}>
-              <Ionicons name="location-outline" size={13} color={t.textSub} />
-              <Text style={[styles.farmText, { color: t.textSub }]}>{product.farm}</Text>
+            {/* Seller row: storefront icon + GreenAja brand */}
+            <View style={styles.sellerRow}>
+              <View style={[styles.sellerIconBox, { backgroundColor: t.primaryMuted }]}>
+                <Ionicons name="storefront-outline" size={13} color={t.primary} />
+              </View>
+              <Text style={[styles.sellerText, { color: t.primary }]}>{product.seller}</Text>
             </View>
-            {/* Avg rating badge di bawah nama */}
             {reviews.length > 0 && (
               <View style={styles.avgRow}>
                 <Stars rating={Math.round(avgRating)} size={14} />
@@ -311,12 +309,10 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
             )}
           </View>
 
-          {/* ───────────── SECTION ULASAN ───────────── */}
+          {/* Reviews */}
           {reviews.length > 0 && (
             <>
               <View style={[styles.divider, { backgroundColor: t.border }]} />
-
-              {/* Header ulasan */}
               <View style={styles.reviewHeader}>
                 <View style={styles.reviewHeaderLeft}>
                   <View style={[styles.reviewIconBox, { backgroundColor: t.primaryMuted }]}>
@@ -326,16 +322,12 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
                 </View>
                 <Text style={[styles.reviewCount, { color: t.textSub }]}>{reviews.length} ulasan</Text>
               </View>
-
-              {/* Rating summary card */}
               <View style={[styles.ratingSummary, { backgroundColor: t.surface, borderColor: t.border }]}>
-                {/* Left: big number */}
                 <View style={styles.ratingBig}>
                   <Text style={[styles.ratingBigNum, { color: t.text }]}>{avgRating.toFixed(1)}</Text>
                   <Stars rating={Math.round(avgRating)} size={16} />
                   <Text style={[styles.ratingBigSub, { color: t.textSub }]}>{reviews.length} ulasan</Text>
                 </View>
-                {/* Right: distribution bars */}
                 <View style={styles.ratingBars}>
                   {dist.map(({ star, count }) => {
                     const pct = reviews.length > 0 ? count / reviews.length : 0;
@@ -352,8 +344,6 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
                   })}
                 </View>
               </View>
-
-              {/* Review cards */}
               <View style={styles.reviewList}>
                 {visibleReviews.map((review, idx) => (
                   <View
@@ -364,7 +354,6 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
                       idx < visibleReviews.length - 1 && { marginBottom: 10 },
                     ]}
                   >
-                    {/* Top: avatar + name + rating */}
                     <View style={styles.reviewCardTop}>
                       <View style={[styles.reviewAvatar, { backgroundColor: t.primaryMuted }]}>
                         <Text style={[styles.reviewAvatarText, { color: t.primary }]}>
@@ -372,24 +361,17 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
                         </Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.reviewName, { color: t.text }]}>
-                          {censorName(review.name)}
-                        </Text>
+                        <Text style={[styles.reviewName, { color: t.text }]}>{censorName(review.name)}</Text>
                         <View style={styles.reviewMetaRow}>
                           <Stars rating={review.rating} size={12} />
                           <Text style={[styles.reviewDate, { color: t.textSub }]}>{review.date}</Text>
                         </View>
                       </View>
-                      {/* Variant tag */}
                       <View style={[styles.reviewVariantBadge, { backgroundColor: t.accent }]}>
                         <Text style={[styles.reviewVariantText, { color: t.textSub }]}>{review.variant}</Text>
                       </View>
                     </View>
-
-                    {/* Note */}
                     <Text style={[styles.reviewNote, { color: t.text }]}>{review.note}</Text>
-
-                    {/* Photo placeholder */}
                     {review.photo && (
                       <View style={styles.reviewPhotoRow}>
                         {[0, 1].map(i => (
@@ -402,8 +384,6 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
                         </View>
                       </View>
                     )}
-
-                    {/* Helpful row */}
                     <View style={styles.helpfulRow}>
                       <Ionicons name="thumbs-up-outline" size={12} color={t.textSub} />
                       <Text style={[styles.helpfulText, { color: t.textSub }]}>Ulasan ini membantu</Text>
@@ -411,8 +391,6 @@ export default function ProductBottomSheet({ visible, product, onClose, onAddToC
                   </View>
                 ))}
               </View>
-
-              {/* Show more / less */}
               {reviews.length > 2 && (
                 <TouchableOpacity
                   style={[styles.showMoreBtn, { borderColor: t.border, backgroundColor: t.surface }]}
@@ -464,9 +442,10 @@ const styles = StyleSheet.create({
   tagBox:              { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
   tagText:             { fontSize: 11, fontWeight: '700' },
   productMeta:         { paddingHorizontal: 20, paddingBottom: 16, alignItems: 'center' },
-  productName:         { fontSize: 22, fontWeight: '800', letterSpacing: -0.3, marginBottom: 6, textAlign: 'center' },
-  farmRow:             { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
-  farmText:            { fontSize: 13 },
+  productName:         { fontSize: 22, fontWeight: '800', letterSpacing: -0.3, marginBottom: 8, textAlign: 'center' },
+  sellerRow:           { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  sellerIconBox:       { width: 22, height: 22, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  sellerText:          { fontSize: 13, fontWeight: '700' },
   avgRow:              { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   avgText:             { fontSize: 14, fontWeight: '800' },
   avgCount:            { fontSize: 12 },
@@ -491,13 +470,10 @@ const styles = StyleSheet.create({
   editHintText:        { fontSize: 11, fontWeight: '600' },
   errorRow:            { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
   errorText:           { fontSize: 12 },
-
-  // ─ Review section ─
   reviewHeader:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 12 },
   reviewHeaderLeft:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
   reviewIconBox:       { width: 26, height: 26, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   reviewCount:         { fontSize: 12 },
-
   ratingSummary:       { flexDirection: 'row', marginHorizontal: 20, borderRadius: 16, borderWidth: 1, padding: 16, gap: 16, marginBottom: 14 },
   ratingBig:           { alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 70 },
   ratingBigNum:        { fontSize: 36, fontWeight: '900', letterSpacing: -1 },
@@ -508,7 +484,6 @@ const styles = StyleSheet.create({
   barTrack:            { flex: 1, height: 6, borderRadius: 3, overflow: 'hidden' },
   barFill:             { height: '100%', borderRadius: 3 },
   barCount:            { fontSize: 11, width: 16, textAlign: 'right' },
-
   reviewList:          { paddingHorizontal: 20, marginBottom: 4 },
   reviewCard:          { borderRadius: 16, borderWidth: 1, padding: 14 },
   reviewCardTop:       { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 },
@@ -525,11 +500,8 @@ const styles = StyleSheet.create({
   reviewPhotoMore:     { fontSize: 13, fontWeight: '700' },
   helpfulRow:          { flexDirection: 'row', alignItems: 'center', gap: 5 },
   helpfulText:         { fontSize: 11 },
-
   showMoreBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: 20, borderWidth: 1, borderRadius: 14, paddingVertical: 12, marginTop: 8, marginBottom: 4 },
   showMoreText:        { fontSize: 13, fontWeight: '700' },
-
-  // ─ CTA bar ─
   ctaBar:              { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 },
   ctaPriceRow:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   ctaPriceLabel:       { fontSize: 13 },
