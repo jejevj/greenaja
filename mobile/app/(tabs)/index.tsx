@@ -27,6 +27,19 @@ type LocationState =
   | { status: 'ok'; kecamatan: string; kabupaten?: string; provinsi?: string };
 
 // ─── Nominatim reverse geocode ────────────────────────────────────────────────
+// Mapping field Nominatim OSM untuk Indonesia:
+//   addr.municipality   → Kecamatan (paling akurat di rural)
+//   addr.suburb         → Kecamatan / kawasan kota
+//   addr.city_district  → Kecamatan kota besar
+//   addr.quarter        → Sub-distrik / kawasan
+//   addr.village        → Desa/Kelurahan (lebih spesifik)
+//   addr.town           → Kota kecil / ibukota kecamatan
+//   ── batas kecamatan ──
+//   addr.county         → Kabupaten/Kota (BUKAN kecamatan)
+//   addr.city           → Kota (setara kabupaten)
+//   addr.regency        → Kabupaten
+//   addr.state_district → Kabupaten/Kota alternatif
+//   addr.state          → Provinsi
 async function reverseGeocode(
   lat: number, lon: number
 ): Promise<{ kecamatan: string; kabupaten?: string; provinsi?: string } | null> {
@@ -37,19 +50,28 @@ async function reverseGeocode(
   const data = await res.json();
   const addr = data?.address ?? {};
 
+  // Kecamatan — urutan dari paling akurat ke fallback
   const kecamatan =
-    addr.county ??
-    addr.suburb ??
-    addr.city_district ??
-    addr.quarter ??
-    addr.village ??
-    addr.town ??
+    addr.municipality   ??
+    addr.suburb         ??
+    addr.city_district  ??
+    addr.quarter        ??
+    addr.village        ??
+    addr.town           ??
     null;
 
   if (!kecamatan) return null;
 
-  const kabupaten = addr.city ?? addr.regency ?? undefined;
-  const provinsi  = addr.state ?? undefined;
+  // Kabupaten/Kota — county di OSM Indonesia = kabupaten
+  const kabupaten =
+    addr.county         ??
+    addr.city           ??
+    addr.regency        ??
+    addr.state_district ??
+    undefined;
+
+  // Provinsi
+  const provinsi = addr.state ?? undefined;
 
   return { kecamatan, kabupaten, provinsi };
 }
@@ -170,7 +192,7 @@ const gpsStyles = StyleSheet.create({
   hint:     { fontSize: 12, textAlign: 'center', marginTop: 4, lineHeight: 18 },
 });
 
-// ─── Banner lokasi (satu-satunya deklarasi) ───────────────────────────────────
+// ─── Banner lokasi ─────────────────────────────────────────────────────────────
 function LocationBanner({ t, onGpsOff }: { t: typeof LIGHT; onGpsOff: (v: boolean) => void }) {
   const { loc, refetch } = useKecamatan();
 
@@ -226,14 +248,17 @@ function LocationBanner({ t, onGpsOff }: { t: typeof LIGHT; onGpsOff: (v: boolea
         )}
         {loc.status === 'ok' && (
           <>
+            {/* Kecamatan — paling besar */}
             <Text style={[locStyles.kecamatan, { color: t.text }]} numberOfLines={1}>
               {loc.kecamatan}
             </Text>
+            {/* Kabupaten/Kota */}
             {loc.kabupaten && (
               <Text style={[locStyles.kabupaten, { color: t.textSub }]} numberOfLines={1}>
                 {loc.kabupaten}
               </Text>
             )}
+            {/* Provinsi */}
             {loc.provinsi && (
               <Text style={[locStyles.provinsi, { color: t.textSub }]} numberOfLines={1}>
                 {loc.provinsi}
@@ -576,7 +601,6 @@ export default function HomeScreen() {
         onAddToCart={handleAddToCart}
       />
 
-      {/* Full-screen solid GPS-off overlay — di atas segalanya */}
       {gpsOff && <LocationOffScreen t={t} />}
     </SafeAreaView>
   );
